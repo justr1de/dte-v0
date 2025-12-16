@@ -16,6 +16,15 @@ import Importar from './pages/Importar'
 import Usuarios from './pages/Usuarios'
 import Configuracoes from './pages/Configuracoes'
 
+// Fase 2 - Pesquisas
+import Pesquisas from './pages/Pesquisas'
+import CriarPesquisa from './pages/CriarPesquisa'
+
+// Fase 3 - Inteligência Estratégica
+import AnalisePreditiva from './pages/AnalisePreditiva'
+import Recomendacoes from './pages/Recomendacoes'
+import AcoesCampanha from './pages/AcoesCampanha'
+
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -74,6 +83,15 @@ export default function App() {
       <Route path="/mapas" element={<ProtectedRoute><Mapas /></ProtectedRoute>} />
       <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
       <Route path="/importar" element={<ProtectedRoute><Importar /></ProtectedRoute>} />
+
+      {/* Fase 2 - Pesquisas */}
+      <Route path="/pesquisas" element={<ProtectedRoute><Pesquisas /></ProtectedRoute>} />
+      <Route path="/pesquisas/criar" element={<ProtectedRoute><CriarPesquisa /></ProtectedRoute>} />
+
+      {/* Fase 3 - Inteligência Estratégica */}
+      <Route path="/analise-preditiva" element={<ProtectedRoute><AnalisePreditiva /></ProtectedRoute>} />
+      <Route path="/recomendacoes" element={<ProtectedRoute><Recomendacoes /></ProtectedRoute>} />
+      <Route path="/acoes-campanha" element={<ProtectedRoute><AcoesCampanha /></ProtectedRoute>} />
 
       {/* Admin Routes */}
       <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />

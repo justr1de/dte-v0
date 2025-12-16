@@ -17,7 +17,12 @@ import {
   ChevronDown,
   Upload,
   Map,
-  Vote
+  Vote,
+  ClipboardList,
+  TrendingUp,
+  Target,
+  Bell,
+  PlusCircle
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -31,18 +36,50 @@ export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
-  const menuItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'gestor_campanha', 'candidato'] },
-    { path: '/eleitorado', icon: Users, label: 'Eleitorado', roles: ['admin', 'gestor_campanha', 'candidato'] },
-    { path: '/candidatos', icon: UserCheck, label: 'Candidatos', roles: ['admin', 'gestor_campanha'] },
-    { path: '/resultados', icon: BarChart3, label: 'Resultados', roles: ['admin', 'gestor_campanha', 'candidato'] },
-    { path: '/votos-nulos', icon: Vote, label: 'Votos Nulos', roles: ['admin', 'gestor_campanha', 'candidato'] },
-    { path: '/mapas', icon: Map, label: 'Mapas', roles: ['admin', 'gestor_campanha', 'candidato'] },
-    { path: '/relatorios', icon: FileText, label: 'Relatórios', roles: ['admin', 'gestor_campanha', 'candidato'] },
-    { path: '/importar', icon: Upload, label: 'Importar', roles: ['admin', 'gestor_campanha'] },
-    { path: '/usuarios', icon: Users, label: 'Usuários', roles: ['admin'] },
-    { path: '/configuracoes', icon: Settings, label: 'Configurações', roles: ['admin'] },
+  const menuSections = [
+    {
+      title: 'Principal',
+      items: [
+        { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'gestor_campanha', 'candidato'] },
+      ]
+    },
+    {
+      title: 'Fase 1 - Mapeamento',
+      items: [
+        { path: '/eleitorado', icon: Users, label: 'Eleitorado', roles: ['admin', 'gestor_campanha', 'candidato'] },
+        { path: '/candidatos', icon: UserCheck, label: 'Candidatos', roles: ['admin', 'gestor_campanha'] },
+        { path: '/resultados', icon: BarChart3, label: 'Resultados', roles: ['admin', 'gestor_campanha', 'candidato'] },
+        { path: '/votos-nulos', icon: Vote, label: 'Votos Nulos', roles: ['admin', 'gestor_campanha', 'candidato'] },
+        { path: '/mapas', icon: Map, label: 'Mapas de Calor', roles: ['admin', 'gestor_campanha', 'candidato'] },
+      ]
+    },
+    {
+      title: 'Fase 2 - Pesquisas',
+      items: [
+        { path: '/pesquisas', icon: ClipboardList, label: 'Pesquisas', roles: ['admin', 'gestor_campanha'] },
+        { path: '/pesquisas/criar', icon: PlusCircle, label: 'Nova Pesquisa', roles: ['admin', 'gestor_campanha'] },
+      ]
+    },
+    {
+      title: 'Fase 3 - Inteligência',
+      items: [
+        { path: '/analise-preditiva', icon: TrendingUp, label: 'Análise Preditiva', roles: ['admin', 'gestor_campanha'] },
+        { path: '/recomendacoes', icon: Target, label: 'Recomendações', roles: ['admin', 'gestor_campanha'] },
+        { path: '/acoes-campanha', icon: Bell, label: 'Ações Campanha', roles: ['admin', 'gestor_campanha'] },
+      ]
+    },
+    {
+      title: 'Sistema',
+      items: [
+        { path: '/relatorios', icon: FileText, label: 'Relatórios', roles: ['admin', 'gestor_campanha', 'candidato'] },
+        { path: '/importar', icon: Upload, label: 'Importar Dados', roles: ['admin'] },
+        { path: '/usuarios', icon: Users, label: 'Usuários', roles: ['admin'] },
+        { path: '/configuracoes', icon: Settings, label: 'Configurações', roles: ['admin'] },
+      ]
+    }
   ]
+
+  const menuItems = menuSections.flatMap(s => s.items)
 
   const filteredMenuItems = menuItems.filter(item => 
     item.roles.includes(user?.role || 'candidato')
@@ -71,17 +108,35 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           {/* Menu Items */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {filteredMenuItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
-              >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                {sidebarOpen && <span>{item.label}</span>}
-              </Link>
-            ))}
+          <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+            {menuSections.map((section) => {
+              const sectionItems = section.items.filter(item => 
+                item.roles.includes(user?.role || 'candidato')
+              )
+              if (sectionItems.length === 0) return null
+              return (
+                <div key={section.title}>
+                  {sidebarOpen && (
+                    <h3 className="px-3 mb-2 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                      {section.title}
+                    </h3>
+                  )}
+                  <div className="space-y-1">
+                    {sectionItems.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+                        title={!sidebarOpen ? item.label : undefined}
+                      >
+                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                        {sidebarOpen && <span>{item.label}</span>}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
           </nav>
 
           {/* User Section */}
