@@ -61,7 +61,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem('dte-color-theme') as ColorTheme
       if (saved) return saved
     }
-    return 'emerald'
+    return 'slate'
   })
 
   const [backgroundImage, setBackgroundImageState] = useState<string | null>(() => {
