@@ -15,6 +15,7 @@ import {
   Sun,
   Moon,
   ChevronDown,
+  ChevronUp,
   ChevronRight,
   Upload,
   Map,
@@ -30,7 +31,15 @@ import {
   History,
   Palette,
   Image,
-  Check
+  Check,
+  Lightbulb,
+  Radar,
+  Calculator,
+  UserCircle,
+  Eye,
+  MapPin,
+  AlertTriangle,
+  Trophy
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -42,8 +51,8 @@ export default function Layout({ children }: LayoutProps) {
   const { theme, colorTheme, backgroundImage, toggleTheme, setColorTheme, setBackgroundImage } = useTheme()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [adminSectionOpen, setAdminSectionOpen] = useState(false)
+  const [insightsSectionOpen, setInsightsSectionOpen] = useState(false)
   const [colorPickerOpen, setColorPickerOpen] = useState(false)
   const [bgImageInput, setBgImageInput] = useState(backgroundImage || '')
 
@@ -80,6 +89,16 @@ export default function Layout({ children }: LayoutProps) {
       ]
     },
     {
+      title: 'Ferramentas Estratégicas',
+      items: [
+        { path: '/radar-eleitoral', icon: Radar, label: 'Radar Eleitoral', roles: ['admin', 'gestor_campanha'] },
+        { path: '/simulador-cenarios', icon: TrendingUp, label: 'Simulador de Cenários', roles: ['admin', 'gestor_campanha'] },
+        { path: '/perfil-eleitor', icon: UserCircle, label: 'Perfil do Eleitor Ideal', roles: ['admin', 'gestor_campanha'] },
+        { path: '/monitor-concorrencia', icon: Eye, label: 'Monitor de Concorrência', roles: ['admin', 'gestor_campanha'] },
+        { path: '/calculadora-metas', icon: Calculator, label: 'Calculadora de Metas', roles: ['admin', 'gestor_campanha'] },
+      ]
+    },
+    {
       title: 'Sistema',
       items: [
         { path: '/relatorios', icon: FileText, label: 'Relatórios', roles: ['admin', 'gestor_campanha', 'candidato'] },
@@ -87,6 +106,12 @@ export default function Layout({ children }: LayoutProps) {
         { path: '/configuracoes', icon: Settings, label: 'Configurações', roles: ['admin'] },
       ]
     }
+  ]
+
+  const insightsMenuItems = [
+    { path: '/insights/territorial', icon: MapPin, label: 'Inteligência Territorial' },
+    { path: '/insights/abstencao', icon: AlertTriangle, label: 'Análise de Abstenção' },
+    { path: '/insights/competitividade', icon: Trophy, label: 'Competitividade Eleitoral' },
   ]
 
   const adminMenuItems = [
@@ -163,104 +188,138 @@ export default function Layout({ children }: LayoutProps) {
               )
             })}
 
-            {/* Seção Administrador */}
-            {userIsAdmin && (
-              <div className="pt-2 border-t border-[var(--border-color)]">
-                <button
-                  onClick={() => setAdminSectionOpen(!adminSectionOpen)}
-                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-[var(--bg-card)] transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-red-500" />
-                    {sidebarOpen && (
-                      <span className="text-xs font-semibold text-red-500 uppercase tracking-wider">
-                        Administrador
-                      </span>
-                    )}
-                  </div>
-                  {sidebarOpen && (
-                    adminSectionOpen ? <ChevronDown className="w-4 h-4 text-red-500" /> : <ChevronRight className="w-4 h-4 text-red-500" />
-                  )}
-                </button>
-
-                {adminSectionOpen && sidebarOpen && (
-                  <div className="mt-2 space-y-1 pl-2">
-                    {adminMenuItems.map((item) => (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
-                      >
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
-                        <span>{item.label}</span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-
-                {!sidebarOpen && (
-                  <div className="mt-2 space-y-1">
-                    {adminMenuItems.map((item) => (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
-                        title={item.label}
-                      >
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </nav>
-
-          {/* User Section */}
-          <div className="p-4 border-t border-[var(--border-color)]">
-            <div className="relative">
+            {/* Central de Insights */}
+            <div className="pt-2 border-t border-[var(--border-color)]">
               <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-[var(--bg-card)] transition-colors"
+                onClick={() => setInsightsSectionOpen(!insightsSectionOpen)}
+                className="flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-[var(--bg-card)] transition-colors"
               >
-                <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white font-medium">
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-amber-500" />
+                  {sidebarOpen && (
+                    <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
+                      Central de Insights
+                    </span>
+                  )}
                 </div>
                 {sidebarOpen && (
-                  <>
-                    <div className="flex-1 text-left">
-                      <p className="text-sm font-medium truncate">{user?.name || 'Usuário'}</p>
-                      <p className="text-xs text-[var(--text-muted)] capitalize">{user?.role?.replace('_', ' ') || 'Candidato'}</p>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
-                  </>
+                  insightsSectionOpen ? <ChevronDown className="w-4 h-4 text-amber-500" /> : <ChevronRight className="w-4 h-4 text-amber-500" />
                 )}
               </button>
 
-              {userMenuOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-lg z-50">
-                  <button
-                    onClick={toggleTheme}
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-[var(--bg-secondary)] transition-colors"
-                  >
-                    {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    {theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
-                  </button>
-                  <button
-                    onClick={() => setColorPickerOpen(!colorPickerOpen)}
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-[var(--bg-secondary)] transition-colors"
-                  >
-                    <Palette className="w-4 h-4" />
-                    Cor do Tema
-                  </button>
+              {insightsSectionOpen && sidebarOpen && (
+                <div className="mt-2 space-y-1 pl-2">
+                  {insightsMenuItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {!sidebarOpen && (
+                <div className="mt-2 space-y-1">
+                  {insightsMenuItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+                      title={item.label}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </nav>
+
+          {/* Admin Section - No Rodapé */}
+          {userIsAdmin && (
+            <div className="border-t border-[var(--border-color)]">
+              <button
+                onClick={() => setAdminSectionOpen(!adminSectionOpen)}
+                className="flex items-center justify-between w-full px-4 py-3 hover:bg-[var(--bg-card)] transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-red-500" />
+                  {sidebarOpen && (
+                    <span className="text-xs font-semibold text-red-500 uppercase tracking-wider">
+                      Administrador
+                    </span>
+                  )}
+                </div>
+                {sidebarOpen && (
+                  adminSectionOpen ? <ChevronDown className="w-4 h-4 text-red-500" /> : <ChevronUp className="w-4 h-4 text-red-500" />
+                )}
+              </button>
+
+              {adminSectionOpen && sidebarOpen && (
+                <div className="pb-2 px-2 space-y-1">
+                  {adminMenuItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {!sidebarOpen && adminSectionOpen && (
+                <div className="pb-2 px-2 space-y-1">
+                  {adminMenuItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+                      title={item.label}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* User Section with Logout Button */}
+          <div className="p-4 border-t border-[var(--border-color)]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white font-medium flex-shrink-0">
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              {sidebarOpen && (
+                <>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{user?.name || 'Usuário'}</p>
+                    <p className="text-xs text-[var(--text-muted)] capitalize">{user?.role?.replace('_', ' ') || 'Candidato'}</p>
+                  </div>
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-500 hover:bg-[var(--bg-secondary)] transition-colors"
+                    className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
+                    title="Sair"
                   >
-                    <LogOut className="w-4 h-4" />
-                    Sair
+                    <LogOut className="w-5 h-5" />
                   </button>
-                </div>
+                </>
+              )}
+              {!sidebarOpen && (
+                <button
+                  onClick={handleSignOut}
+                  className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
+                  title="Sair"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
               )}
             </div>
           </div>

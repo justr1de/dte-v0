@@ -101,3 +101,25 @@
 - [x] Suporte a imagens de fundo por partido/candidato/coligação
 - [x] Expandir paleta de cores com cores primárias de partidos (12 cores)
 - [x] Abas e features coloridas sobre fundo branco
+
+
+## Novas Funcionalidades
+- [x] Radar Eleitoral por Zona
+- [x] Simulador de Cenários Eleitorais
+- [x] Perfil do Eleitor Ideal (Persona Builder)
+- [x] Monitor de Concorrência
+- [x] Calculadora de Meta de Votos
+
+## Central de Insights (Dashboards)
+- [x] Dashboard Inteligência Territorial
+- [x] Dashboard Análise de Abstenção
+- [x] Dashboard Competitividade Eleitoral
+
+## Reorganização do Menu
+- [x] Mover aba Administrador para o rodapé do menu lateral
+- [x] Menu Administrador expande para cima
+- [x] Botão de logout ao lado do nome do usuário
+
+## Correções
+- [x] Corrigir botão de logout que não está respondendo
+- [ ] Corrigir problema de login que não está funcionando

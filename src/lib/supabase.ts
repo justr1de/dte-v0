@@ -1,16 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://uttvovuufyhqxjmqqbuk.supabase.co'
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0dHZvdnV1ZnlocXhqbXFxYnVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NzQ0NzgsImV4cCI6MjA4MTQ1MDQ3OH0.2TkAgL0vR62FqBzIS7Z2JLpeqHnpoM3AxVE9y8xNifE'
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials not configured. Using demo mode.')
-}
-
-export const supabase = createClient(
-  supabaseUrl || 'https://demo.supabase.co',
-  supabaseAnonKey || 'demo-key'
-)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export type UserRole = 'admin' | 'gestor_campanha' | 'candidato'
 

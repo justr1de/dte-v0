@@ -25,6 +25,18 @@ import AnalisePreditiva from './pages/AnalisePreditiva'
 import Recomendacoes from './pages/Recomendacoes'
 import AcoesCampanha from './pages/AcoesCampanha'
 
+// Novas Funcionalidades Estratégicas
+import RadarEleitoral from './pages/RadarEleitoral'
+import SimuladorCenarios from './pages/SimuladorCenarios'
+import PerfilEleitor from './pages/PerfilEleitor'
+import MonitorConcorrencia from './pages/MonitorConcorrencia'
+import CalculadoraMetas from './pages/CalculadoraMetas'
+
+// Central de Insights
+import InteligenciaTerritorial from './pages/insights/InteligenciaTerritorial'
+import AnaliseAbstencao from './pages/insights/AnaliseAbstencao'
+import CompetitividadeEleitoral from './pages/insights/CompetitividadeEleitoral'
+
 // Admin
 import GerenciarUsuarios from './pages/admin/GerenciarUsuarios'
 import ControleAcessos from './pages/admin/ControleAcessos'
@@ -97,6 +109,18 @@ export default function App() {
       <Route path="/analise-preditiva" element={<ProtectedRoute><AnalisePreditiva /></ProtectedRoute>} />
       <Route path="/recomendacoes" element={<ProtectedRoute><Recomendacoes /></ProtectedRoute>} />
       <Route path="/acoes-campanha" element={<ProtectedRoute><AcoesCampanha /></ProtectedRoute>} />
+
+      {/* Novas Funcionalidades Estratégicas */}
+      <Route path="/radar-eleitoral" element={<ProtectedRoute><RadarEleitoral /></ProtectedRoute>} />
+      <Route path="/simulador-cenarios" element={<ProtectedRoute><SimuladorCenarios /></ProtectedRoute>} />
+      <Route path="/perfil-eleitor" element={<ProtectedRoute><PerfilEleitor /></ProtectedRoute>} />
+      <Route path="/monitor-concorrencia" element={<ProtectedRoute><MonitorConcorrencia /></ProtectedRoute>} />
+      <Route path="/calculadora-metas" element={<ProtectedRoute><CalculadoraMetas /></ProtectedRoute>} />
+
+      {/* Central de Insights */}
+      <Route path="/insights/territorial" element={<ProtectedRoute><InteligenciaTerritorial /></ProtectedRoute>} />
+      <Route path="/insights/abstencao" element={<ProtectedRoute><AnaliseAbstencao /></ProtectedRoute>} />
+      <Route path="/insights/competitividade" element={<ProtectedRoute><CompetitividadeEleitoral /></ProtectedRoute>} />
 
       {/* Admin Routes */}
       <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
