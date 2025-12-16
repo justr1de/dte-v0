@@ -162,7 +162,7 @@ export default function Login() {
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-16 text-white">
           <h2 className="text-4xl font-bold mb-4">
-            Sistema de Inteligência Eleitoral
+            SISTEMA DE INTELIGÊNCIA ELEITORAL E GESTÃO DE CAMPANHA
           </h2>
           <p className="text-xl text-white/80 mb-8 max-w-lg">
             Plataforma completa para rastreamento e análise de dados eleitorais, 
