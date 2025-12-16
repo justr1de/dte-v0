@@ -116,10 +116,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img src="/logo-dte.png" alt="DTE" className="w-12 h-12 rounded-xl shadow-lg" />
-            <div>
-              <h1 className="font-bold text-lg leading-tight">DATA TRACKING</h1>
-              <h1 className="font-bold text-lg leading-tight">ELEITORAL - DTE</h1>
-            </div>
+            <h1 className="font-bold text-lg whitespace-nowrap">DATA TRACKING ELEITORAL - DTE</h1>
           </div>
 
           <nav className="flex items-center gap-3">
@@ -368,17 +365,18 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-white/10">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <img src="/logo-dte.png" alt="DTE" className="w-8 h-8 rounded-lg" />
-            <span className="text-sm text-slate-400">
-              Data Tracking Eleitoral © 2024
-            </span>
+      <footer className="py-12 px-6 border-t border-white/10">
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-6">
+          <div className="flex flex-col items-center gap-3">
+            <img src="/logo-dte.png" alt="DATA-RO" className="w-16 h-16 rounded-xl" />
+            <div className="text-center">
+              <p className="font-semibold text-white">DATA-RO INTELIGÊNCIA TERRITORIAL</p>
+              <p className="text-sm text-slate-400">2025</p>
+            </div>
           </div>
-          <p className="text-sm text-slate-500">
-            Desenvolvido para análise de dados eleitorais
-          </p>
+          <div className="text-center text-sm text-slate-500">
+            <p>© Copyright - Todos os Direitos Reservados</p>
+          </div>
         </div>
       </footer>
     </div>
