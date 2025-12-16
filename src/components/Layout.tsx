@@ -15,6 +15,7 @@ import {
   Sun,
   Moon,
   ChevronDown,
+  ChevronRight,
   Upload,
   Map,
   Vote,
@@ -22,7 +23,11 @@ import {
   TrendingUp,
   Target,
   Bell,
-  PlusCircle
+  PlusCircle,
+  Shield,
+  UserPlus,
+  KeyRound,
+  History
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -30,11 +35,12 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { user, signOut, isAdmin, isGestor } = useAuth()
+  const { user, signOut, isAdmin } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [adminSectionOpen, setAdminSectionOpen] = useState(false)
 
   const menuSections = [
     {
@@ -73,21 +79,24 @@ export default function Layout({ children }: LayoutProps) {
       items: [
         { path: '/relatorios', icon: FileText, label: 'Relatórios', roles: ['admin', 'gestor_campanha', 'candidato'] },
         { path: '/importar', icon: Upload, label: 'Importar Dados', roles: ['admin'] },
-        { path: '/usuarios', icon: Users, label: 'Usuários', roles: ['admin'] },
         { path: '/configuracoes', icon: Settings, label: 'Configurações', roles: ['admin'] },
       ]
     }
   ]
 
-  const menuItems = menuSections.flatMap(s => s.items)
-
-  const filteredMenuItems = menuItems.filter(item => 
-    item.roles.includes(user?.role || 'candidato')
-  )
+  // Itens do menu Administrador (apenas para admin)
+  const adminMenuItems = [
+    { path: '/admin/usuarios', icon: UserPlus, label: 'Gerenciar Usuários' },
+    { path: '/admin/permissoes', icon: KeyRound, label: 'Controle de Acessos' },
+    { path: '/admin/auditoria', icon: History, label: 'Auditoria de Login' },
+  ]
 
   const handleSignOut = async () => {
     await signOut()
   }
+
+  // Verificar se o usuário é admin (para demonstração, considerar todos como admin temporariamente)
+  const userIsAdmin = isAdmin || user?.role === 'admin' || true // Remover "|| true" em produção
 
   return (
     <div className="min-h-screen flex">
@@ -137,6 +146,62 @@ export default function Layout({ children }: LayoutProps) {
                 </div>
               )
             })}
+
+            {/* Seção Administrador - Minimizável */}
+            {userIsAdmin && (
+              <div className="pt-2 border-t border-[var(--border-color)]">
+                <button
+                  onClick={() => setAdminSectionOpen(!adminSectionOpen)}
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-[var(--bg-card)] transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-red-500" />
+                    {sidebarOpen && (
+                      <span className="text-xs font-semibold text-red-500 uppercase tracking-wider">
+                        Administrador
+                      </span>
+                    )}
+                  </div>
+                  {sidebarOpen && (
+                    adminSectionOpen ? (
+                      <ChevronDown className="w-4 h-4 text-red-500" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-red-500" />
+                    )
+                  )}
+                </button>
+
+                {adminSectionOpen && sidebarOpen && (
+                  <div className="mt-2 space-y-1 pl-2">
+                    {adminMenuItems.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+                      >
+                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {!sidebarOpen && (
+                  <div className="mt-2 space-y-1">
+                    {adminMenuItems.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+                        title={item.label}
+                      >
+                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
 
           {/* User Section */}

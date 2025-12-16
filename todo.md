@@ -88,3 +88,10 @@
 - [ ] Registro ações implementadas
 - [ ] Métricas efetividade
 - [ ] Comparação planejado vs executado
+
+## Módulo Administrador
+- [ ] Menu lateral com seção Administrador minimizável
+- [ ] Gerenciador de usuários (criar, editar, ativar/desativar)
+- [ ] Controle de acessos (níveis de permissão)
+- [ ] Auditoria de login (logs de acesso)
+- [ ] Restringir acesso apenas para administradores

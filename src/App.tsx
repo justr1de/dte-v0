@@ -25,6 +25,11 @@ import AnalisePreditiva from './pages/AnalisePreditiva'
 import Recomendacoes from './pages/Recomendacoes'
 import AcoesCampanha from './pages/AcoesCampanha'
 
+// Admin
+import GerenciarUsuarios from './pages/admin/GerenciarUsuarios'
+import ControleAcessos from './pages/admin/ControleAcessos'
+import AuditoriaLogin from './pages/admin/AuditoriaLogin'
+
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -96,6 +101,9 @@ export default function App() {
       {/* Admin Routes */}
       <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
       <Route path="/configuracoes" element={<AdminRoute><Configuracoes /></AdminRoute>} />
+      <Route path="/admin/usuarios" element={<AdminRoute><GerenciarUsuarios /></AdminRoute>} />
+      <Route path="/admin/permissoes" element={<AdminRoute><ControleAcessos /></AdminRoute>} />
+      <Route path="/admin/auditoria" element={<AdminRoute><AuditoriaLogin /></AdminRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
