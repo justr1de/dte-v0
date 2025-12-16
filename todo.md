@@ -97,7 +97,7 @@
 - [x] Restringir acesso apenas para administradores
 
 ## Personalização Visual
-- [ ] Tema claro como padrão para usuários logados
-- [ ] Suporte a imagens de fundo por partido/candidato/coligação
-- [ ] Expandir paleta de cores com cores primárias de partidos
-- [ ] Abas e features coloridas sobre fundo branco
+- [x] Tema claro como padrão para usuários logados
+- [x] Suporte a imagens de fundo por partido/candidato/coligação
+- [x] Expandir paleta de cores com cores primárias de partidos (12 cores)
+- [x] Abas e features coloridas sobre fundo branco
