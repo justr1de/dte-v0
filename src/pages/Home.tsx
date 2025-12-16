@@ -366,17 +366,30 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/10">
-        <div className="max-w-7xl mx-auto flex flex-col items-center gap-6">
-          <div className="flex flex-col items-center gap-3">
-            <img src="/logo-dte.png" alt="DATA-RO" className="w-16 h-16 rounded-xl" />
-            <div className="text-center">
-              <p className="font-semibold text-white">DATA-RO INTELIGÊNCIA TERRITORIAL</p>
-              <p className="text-sm text-slate-400">2025</p>
+        <div className="max-w-7xl mx-auto">
+          {/* Logos Row */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-8">
+            {/* Left - DTE Logo */}
+            <div className="flex items-center gap-4">
+              <img src="/logo-dte.png" alt="DTE" className="w-14 h-14 rounded-xl" />
+              <div>
+                <p className="font-bold text-white">DATA TRACKING ELEITORAL</p>
+                <p className="text-sm text-slate-400">Sistema de Inteligência Eleitoral</p>
+              </div>
+            </div>
+            
+            {/* Right - DATA-RO Logo */}
+            <div className="flex items-center gap-4">
+              <img src="/logo-dataro.jpeg" alt="DATA-RO" className="w-14 h-14 rounded-xl" />
+              <div>
+                <p className="font-bold text-white">DATA-RO</p>
+                <p className="text-sm text-slate-400">Inteligência Territorial</p>
+              </div>
             </div>
           </div>
           
           {/* Contact Info */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-slate-400">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-slate-400 mb-6">
             <a href="mailto:contato@dataro-it.com.br" className="hover:text-white transition-colors">
               contato@dataro-it.com.br
             </a>
@@ -394,8 +407,10 @@ export default function Home() {
             </a>
           </div>
           
-          <div className="text-center text-sm text-slate-500">
-            <p>© Copyright - Todos os Direitos Reservados</p>
+          {/* Copyright */}
+          <div className="text-center text-sm text-slate-500 pt-6 border-t border-white/5">
+            <p>DATA-RO INTELIGÊNCIA TERRITORIAL</p>
+            <p className="mt-1">© 2025 - Todos os Direitos Reservados</p>
           </div>
         </div>
       </footer>
