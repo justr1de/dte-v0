@@ -2,18 +2,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
-import { Eye, EyeOff, Sun, Moon, LogIn, UserPlus } from 'lucide-react'
+import { Eye, EyeOff, Sun, Moon, LogIn, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function Login() {
-  const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   
-  const { signIn, signUp } = useAuth()
+  const { signIn } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
 
@@ -22,22 +20,12 @@ export default function Login() {
     setLoading(true)
 
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password)
-        if (error) {
-          toast.error('Erro ao fazer login: ' + error.message)
-        } else {
-          toast.success('Login realizado com sucesso!')
-          navigate('/dashboard')
-        }
+      const { error } = await signIn(email, password)
+      if (error) {
+        toast.error('Erro ao fazer login: ' + error.message)
       } else {
-        const { error } = await signUp(email, password, name, 'candidato')
-        if (error) {
-          toast.error('Erro ao criar conta: ' + error.message)
-        } else {
-          toast.success('Conta criada com sucesso! Verifique seu email.')
-          setIsLogin(true)
-        }
+        toast.success('Login realizado com sucesso!')
+        navigate('/dashboard')
       }
     } catch (error) {
       toast.error('Erro inesperado. Tente novamente.')
@@ -68,40 +56,32 @@ export default function Login() {
           {/* Logo */}
           <div className="flex items-center gap-4 mb-8">
             <img src="/logo-dte.png" alt="DTE" className="w-16 h-16 rounded-xl" />
-            <div>
-              <h1 className="text-2xl font-bold gradient-text">DATA TRACKING</h1>
-              <h1 className="text-2xl font-bold gradient-text">ELEITORAL</h1>
-            </div>
+            <h1 className="text-2xl font-bold gradient-text">DATA TRACKING ELEITORAL - DTE</h1>
           </div>
 
           {/* Title */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold mb-2">
-              {isLogin ? 'Bem-vindo de volta!' : 'Criar conta'}
-            </h2>
+            <h2 className="text-3xl font-bold mb-2">Bem-vindo!</h2>
             <p className="text-[var(--text-secondary)]">
-              {isLogin 
-                ? 'Entre com suas credenciais para acessar o sistema' 
-                : 'Preencha os dados para criar sua conta'}
+              Entre com suas credenciais para acessar o sistema
             </p>
+          </div>
+
+          {/* Access Restricted Notice */}
+          <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+            <div className="flex items-start gap-3">
+              <Lock className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-amber-500">Acesso Restrito</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-1">
+                  Este sistema é de uso exclusivo. Apenas usuários autorizados pelos administradores podem acessar.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium mb-2">Nome completo</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input"
-                  placeholder="Seu nome"
-                  required={!isLogin}
-                />
-              </div>
-            )}
-
             <div>
               <label className="block text-sm font-medium mb-2">Email</label>
               <input
@@ -144,8 +124,8 @@ export default function Login() {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  {isLogin ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
-                  {isLogin ? 'Entrar' : 'Criar conta'}
+                  <LogIn className="w-5 h-5" />
+                  Entrar
                 </>
               )}
             </button>
@@ -159,16 +139,15 @@ export default function Login() {
             Acessar Demonstração
           </button>
 
-          {/* Toggle Login/Register */}
-          <p className="text-center mt-6 text-[var(--text-secondary)]">
-            {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="ml-2 text-[var(--accent-color)] hover:underline font-medium"
-            >
-              {isLogin ? 'Criar conta' : 'Fazer login'}
-            </button>
-          </p>
+          {/* Contact Info */}
+          <div className="mt-8 pt-6 border-t border-[var(--border-color)]">
+            <p className="text-sm text-center text-[var(--text-secondary)] mb-2">
+              Para solicitar acesso, entre em contato:
+            </p>
+            <p className="text-sm text-center text-[var(--text-secondary)]">
+              contato@dataro-it.com.br
+            </p>
+          </div>
         </div>
       </div>
 
