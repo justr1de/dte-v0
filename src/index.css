@@ -14,36 +14,173 @@ body {
   min-height: 100vh;
 }
 
-/* Light theme */
+/* ========================================
+   TEMAS DE CORES - PALETA EXPANDIDA
+   ======================================== */
+
+/* Tema Claro (Padrão para usuários logados) */
 .light {
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;
   --bg-card: #ffffff;
+  --bg-sidebar: #f1f5f9;
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
   --border-color: #e2e8f0;
-  --accent-color: #10b981;
-  --accent-hover: #059669;
+  --accent-color: var(--theme-primary, #10b981);
+  --accent-hover: var(--theme-primary-dark, #059669);
+  --accent-light: var(--theme-primary-light, rgba(16, 185, 129, 0.1));
 }
 
-/* Dark theme */
+/* Tema Escuro */
 .dark {
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
   --bg-card: #1e293b;
+  --bg-sidebar: #0f172a;
   --text-primary: #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-muted: #64748b;
   --border-color: #334155;
-  --accent-color: #10b981;
-  --accent-hover: #34d399;
+  --accent-color: var(--theme-primary, #10b981);
+  --accent-hover: var(--theme-primary-light, #34d399);
+  --accent-light: var(--theme-primary-light, rgba(16, 185, 129, 0.2));
 }
+
+/* ========================================
+   TEMAS DE CORES - PARTIDOS E CAMPANHAS
+   ======================================== */
+
+/* Esmeralda (Padrão) */
+.theme-emerald {
+  --theme-primary: #10b981;
+  --theme-primary-dark: #059669;
+  --theme-primary-light: rgba(16, 185, 129, 0.15);
+  --theme-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+/* Azul */
+.theme-blue {
+  --theme-primary: #3b82f6;
+  --theme-primary-dark: #2563eb;
+  --theme-primary-light: rgba(59, 130, 246, 0.15);
+  --theme-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+/* Vermelho */
+.theme-red {
+  --theme-primary: #ef4444;
+  --theme-primary-dark: #dc2626;
+  --theme-primary-light: rgba(239, 68, 68, 0.15);
+  --theme-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* Laranja */
+.theme-orange {
+  --theme-primary: #f97316;
+  --theme-primary-dark: #ea580c;
+  --theme-primary-light: rgba(249, 115, 22, 0.15);
+  --theme-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
+
+/* Amarelo */
+.theme-yellow {
+  --theme-primary: #eab308;
+  --theme-primary-dark: #ca8a04;
+  --theme-primary-light: rgba(234, 179, 8, 0.15);
+  --theme-gradient: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+}
+
+/* Verde Bandeira */
+.theme-green {
+  --theme-primary: #22c55e;
+  --theme-primary-dark: #16a34a;
+  --theme-primary-light: rgba(34, 197, 94, 0.15);
+  --theme-gradient: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+/* Roxo */
+.theme-purple {
+  --theme-primary: #a855f7;
+  --theme-primary-dark: #9333ea;
+  --theme-primary-light: rgba(168, 85, 247, 0.15);
+  --theme-gradient: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+}
+
+/* Rosa */
+.theme-pink {
+  --theme-primary: #ec4899;
+  --theme-primary-dark: #db2777;
+  --theme-primary-light: rgba(236, 72, 153, 0.15);
+  --theme-gradient: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+}
+
+/* Ciano */
+.theme-cyan {
+  --theme-primary: #06b6d4;
+  --theme-primary-dark: #0891b2;
+  --theme-primary-light: rgba(6, 182, 212, 0.15);
+  --theme-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+
+/* Índigo */
+.theme-indigo {
+  --theme-primary: #6366f1;
+  --theme-primary-dark: #4f46e5;
+  --theme-primary-light: rgba(99, 102, 241, 0.15);
+  --theme-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+/* Teal */
+.theme-teal {
+  --theme-primary: #14b8a6;
+  --theme-primary-dark: #0d9488;
+  --theme-primary-light: rgba(20, 184, 166, 0.15);
+  --theme-gradient: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+}
+
+/* Cinza (Neutro) */
+.theme-slate {
+  --theme-primary: #64748b;
+  --theme-primary-dark: #475569;
+  --theme-primary-light: rgba(100, 116, 139, 0.15);
+  --theme-gradient: linear-gradient(135deg, #64748b 0%, #475569 100%);
+}
+
+/* ========================================
+   ESTILOS BASE
+   ======================================== */
 
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Suporte a imagem de fundo personalizada */
+.has-background-image {
+  position: relative;
+}
+
+.has-background-image::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: var(--custom-bg-image);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.light.has-background-image::before {
+  opacity: 0.08;
 }
 
 /* Custom scrollbar */
@@ -65,7 +202,10 @@ body {
   background: var(--text-secondary);
 }
 
-/* Card styles */
+/* ========================================
+   COMPONENTES - CARDS
+   ======================================== */
+
 .card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -78,17 +218,41 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* Button styles */
+.card-accent {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  border-left: 4px solid var(--accent-color);
+  transition: all 0.2s ease;
+}
+
+.card-colored {
+  background: var(--theme-gradient);
+  border: none;
+  border-radius: 0.75rem;
+  color: white;
+}
+
+/* ========================================
+   COMPONENTES - BOTÕES
+   ======================================== */
+
 .btn-primary {
   @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: var(--theme-gradient, linear-gradient(135deg, #10b981 0%, #059669 100%));
   color: white;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  filter: brightness(1.1);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 12px var(--accent-light);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-secondary {
@@ -102,7 +266,21 @@ body {
   background-color: var(--border-color);
 }
 
-/* Input styles */
+.btn-outline {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+  background-color: transparent;
+  color: var(--accent-color);
+  border: 2px solid var(--accent-color);
+}
+
+.btn-outline:hover {
+  background-color: var(--accent-light);
+}
+
+/* ========================================
+   COMPONENTES - INPUTS
+   ======================================== */
+
 .input {
   @apply w-full px-4 py-2 rounded-lg transition-all duration-200;
   background-color: var(--bg-secondary);
@@ -113,43 +291,19 @@ body {
 .input:focus {
   outline: none;
   border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 .input::placeholder {
   color: var(--text-muted);
 }
 
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+/* ========================================
+   COMPONENTES - SIDEBAR
+   ======================================== */
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out forwards;
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.5); }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* Sidebar styles */
 .sidebar {
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-sidebar);
   border-right: 1px solid var(--border-color);
 }
 
@@ -164,35 +318,44 @@ body {
 }
 
 .sidebar-item.active {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+  background: var(--accent-light);
   color: var(--accent-color);
   border-left: 3px solid var(--accent-color);
+  font-weight: 500;
 }
 
-/* Table styles */
-.table-container {
-  @apply overflow-x-auto rounded-lg;
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-}
+/* ========================================
+   COMPONENTES - TABS COLORIDAS
+   ======================================== */
 
-.table-header {
-  background-color: var(--bg-secondary);
+.tab-item {
+  @apply px-4 py-2 rounded-t-lg font-medium transition-all duration-200;
   color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
 }
 
-.table-row {
-  border-bottom: 1px solid var(--border-color);
-  transition: background-color 0.2s ease;
+.tab-item:hover {
+  color: var(--accent-color);
+  background-color: var(--accent-light);
 }
 
-.table-row:hover {
-  background-color: var(--bg-secondary);
+.tab-item.active {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+  background-color: var(--accent-light);
 }
 
-/* Badge styles */
+/* ========================================
+   COMPONENTES - BADGES COLORIDOS
+   ======================================== */
+
 .badge {
   @apply px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.badge-primary {
+  background-color: var(--accent-light);
+  color: var(--accent-color);
 }
 
 .badge-success {
@@ -213,4 +376,100 @@ body {
 .badge-info {
   background-color: rgba(59, 130, 246, 0.1);
   color: #3b82f6;
+}
+
+/* ========================================
+   COMPONENTES - TABELAS
+   ======================================== */
+
+.table-container {
+  @apply overflow-x-auto rounded-lg;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.table-header {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.table-row {
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
+}
+
+.table-row:hover {
+  background-color: var(--bg-secondary);
+}
+
+/* ========================================
+   UTILITÁRIOS - GRADIENTES E TEXTOS
+   ======================================== */
+
+.gradient-text {
+  background: var(--theme-gradient, linear-gradient(135deg, #10b981 0%, #06b6d4 100%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: var(--theme-gradient);
+}
+
+.accent-border {
+  border-color: var(--accent-color);
+}
+
+.accent-text {
+  color: var(--accent-color);
+}
+
+.accent-bg {
+  background-color: var(--accent-light);
+}
+
+/* ========================================
+   ANIMAÇÕES
+   ======================================== */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px var(--accent-light); }
+  50% { box-shadow: 0 0 40px var(--accent-light); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+/* ========================================
+   RESPONSIVIDADE
+   ======================================== */
+
+@media (max-width: 768px) {
+  .card {
+    border-radius: 0.5rem;
+  }
+  
+  .sidebar-item {
+    @apply px-3 py-2;
+  }
 }

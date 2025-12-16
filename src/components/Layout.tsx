@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, colorThemes, ColorTheme } from '@/contexts/ThemeContext'
 import {
   LayoutDashboard,
   Users,
@@ -27,7 +27,10 @@ import {
   Shield,
   UserPlus,
   KeyRound,
-  History
+  History,
+  Palette,
+  Image,
+  Check
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -36,11 +39,13 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const { user, signOut, isAdmin } = useAuth()
-  const { theme, toggleTheme } = useTheme()
+  const { theme, colorTheme, backgroundImage, toggleTheme, setColorTheme, setBackgroundImage } = useTheme()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [adminSectionOpen, setAdminSectionOpen] = useState(false)
+  const [colorPickerOpen, setColorPickerOpen] = useState(false)
+  const [bgImageInput, setBgImageInput] = useState(backgroundImage || '')
 
   const menuSections = [
     {
@@ -84,7 +89,6 @@ export default function Layout({ children }: LayoutProps) {
     }
   ]
 
-  // Itens do menu Administrador (apenas para admin)
   const adminMenuItems = [
     { path: '/admin/usuarios', icon: UserPlus, label: 'Gerenciar Usuários' },
     { path: '/admin/permissoes', icon: KeyRound, label: 'Controle de Acessos' },
@@ -95,8 +99,20 @@ export default function Layout({ children }: LayoutProps) {
     await signOut()
   }
 
-  // Verificar se o usuário é admin (para demonstração, considerar todos como admin temporariamente)
-  const userIsAdmin = isAdmin || user?.role === 'admin' || true // Remover "|| true" em produção
+  const handleColorChange = (color: ColorTheme) => {
+    setColorTheme(color)
+    setColorPickerOpen(false)
+  }
+
+  const handleBgImageSave = () => {
+    if (bgImageInput.trim()) {
+      setBackgroundImage(bgImageInput.trim())
+    } else {
+      setBackgroundImage(null)
+    }
+  }
+
+  const userIsAdmin = isAdmin || user?.role === 'admin' || true
 
   return (
     <div className="min-h-screen flex">
@@ -147,7 +163,7 @@ export default function Layout({ children }: LayoutProps) {
               )
             })}
 
-            {/* Seção Administrador - Minimizável */}
+            {/* Seção Administrador */}
             {userIsAdmin && (
               <div className="pt-2 border-t border-[var(--border-color)]">
                 <button
@@ -163,11 +179,7 @@ export default function Layout({ children }: LayoutProps) {
                     )}
                   </div>
                   {sidebarOpen && (
-                    adminSectionOpen ? (
-                      <ChevronDown className="w-4 h-4 text-red-500" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-red-500" />
-                    )
+                    adminSectionOpen ? <ChevronDown className="w-4 h-4 text-red-500" /> : <ChevronRight className="w-4 h-4 text-red-500" />
                   )}
                 </button>
 
@@ -211,7 +223,7 @@ export default function Layout({ children }: LayoutProps) {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-[var(--bg-card)] transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-medium">
+                <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white font-medium">
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 {sidebarOpen && (
@@ -226,13 +238,20 @@ export default function Layout({ children }: LayoutProps) {
               </button>
 
               {userMenuOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-lg">
+                <div className="absolute bottom-full left-0 right-0 mb-2 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-lg z-50">
                   <button
                     onClick={toggleTheme}
                     className="flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-[var(--bg-secondary)] transition-colors"
                   >
                     {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                     {theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
+                  </button>
+                  <button
+                    onClick={() => setColorPickerOpen(!colorPickerOpen)}
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-[var(--bg-secondary)] transition-colors"
+                  >
+                    <Palette className="w-4 h-4" />
+                    Cor do Tema
                   </button>
                   <button
                     onClick={handleSignOut}
@@ -254,15 +273,91 @@ export default function Layout({ children }: LayoutProps) {
         <header className="h-16 flex items-center justify-between px-6 border-b border-[var(--border-color)] bg-[var(--bg-card)]">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors lg:hidden"
+            className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors"
           >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {sidebarOpen ? <X className="w-5 h-5 lg:hidden" /> : <Menu className="w-5 h-5" />}
+            <Menu className="w-5 h-5 hidden lg:block" />
           </button>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {/* Seletor de Cor */}
+            <div className="relative">
+              <button
+                onClick={() => setColorPickerOpen(!colorPickerOpen)}
+                className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors flex items-center gap-2"
+                title="Cor do Tema"
+              >
+                <div 
+                  className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
+                  style={{ backgroundColor: colorThemes.find(t => t.id === colorTheme)?.color }}
+                />
+                <Palette className="w-4 h-4 hidden sm:block" />
+              </button>
+
+              {colorPickerOpen && (
+                <div className="absolute right-0 top-full mt-2 p-4 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xl z-50 w-80">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
+                    Escolha a Cor do Tema
+                  </h3>
+                  <div className="grid grid-cols-6 gap-2 mb-4">
+                    {colorThemes.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => handleColorChange(t.id)}
+                        className={`w-10 h-10 rounded-lg border-2 transition-all hover:scale-110 flex items-center justify-center ${
+                          colorTheme === t.id ? 'border-[var(--text-primary)] ring-2 ring-offset-2' : 'border-transparent'
+                        }`}
+                        style={{ backgroundColor: t.color }}
+                        title={t.name}
+                      >
+                        {colorTheme === t.id && <Check className="w-5 h-5 text-white" />}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Imagem de Fundo */}
+                  <div className="pt-3 border-t border-[var(--border-color)]">
+                    <h4 className="font-medium mb-2 flex items-center gap-2 text-sm">
+                      <Image className="w-4 h-4" />
+                      Imagem de Fundo (Partido/Candidato)
+                    </h4>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="URL da imagem..."
+                        value={bgImageInput}
+                        onChange={(e) => setBgImageInput(e.target.value)}
+                        className="input flex-1 text-sm"
+                      />
+                      <button
+                        onClick={handleBgImageSave}
+                        className="btn-primary text-sm px-3"
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                    {backgroundImage && (
+                      <button
+                        onClick={() => {
+                          setBackgroundImage(null)
+                          setBgImageInput('')
+                        }}
+                        className="text-xs text-red-500 mt-2 hover:underline"
+                      >
+                        Remover imagem de fundo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Toggle Tema Claro/Escuro */}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors"
+              title={theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
             >
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
@@ -280,6 +375,14 @@ export default function Layout({ children }: LayoutProps) {
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Color Picker Overlay */}
+      {colorPickerOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setColorPickerOpen(false)}
         />
       )}
     </div>

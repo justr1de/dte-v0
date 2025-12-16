@@ -90,8 +90,14 @@
 - [ ] Comparação planejado vs executado
 
 ## Módulo Administrador
-- [ ] Menu lateral com seção Administrador minimizável
-- [ ] Gerenciador de usuários (criar, editar, ativar/desativar)
-- [ ] Controle de acessos (níveis de permissão)
-- [ ] Auditoria de login (logs de acesso)
-- [ ] Restringir acesso apenas para administradores
+- [x] Menu lateral com seção Administrador minimizável
+- [x] Gerenciador de usuários (criar, editar, ativar/desativar)
+- [x] Controle de acessos (níveis de permissão)
+- [x] Auditoria de login (logs de acesso)
+- [x] Restringir acesso apenas para administradores
+
+## Personalização Visual
+- [ ] Tema claro como padrão para usuários logados
+- [ ] Suporte a imagens de fundo por partido/candidato/coligação
+- [ ] Expandir paleta de cores com cores primárias de partidos
+- [ ] Abas e features coloridas sobre fundo branco
