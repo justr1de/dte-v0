@@ -109,9 +109,11 @@ export default function Layout({ children }: LayoutProps) {
   ]
 
   const insightsMenuItems = [
+    { path: '/insights', icon: Lightbulb, label: 'Dashboard de Insights' },
     { path: '/insights/territorial', icon: MapPin, label: 'Inteligência Territorial' },
     { path: '/insights/abstencao', icon: AlertTriangle, label: 'Análise de Abstenção' },
     { path: '/insights/competitividade', icon: Trophy, label: 'Competitividade Eleitoral' },
+    { path: '/mapas-calor', icon: Map, label: 'Mapas de Calor Avançado' },
   ]
 
   const adminMenuItems = [

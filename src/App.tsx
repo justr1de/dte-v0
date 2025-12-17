@@ -11,6 +11,7 @@ import Candidatos from './pages/Candidatos'
 import Resultados from './pages/Resultados'
 import VotosNulos from './pages/VotosNulos'
 import Mapas from './pages/Mapas'
+import MapasCalor from './pages/MapasCalor'
 import Relatorios from './pages/Relatorios'
 import Importar from './pages/Importar'
 import Usuarios from './pages/Usuarios'
@@ -36,6 +37,7 @@ import CalculadoraMetas from './pages/CalculadoraMetas'
 import InteligenciaTerritorial from './pages/insights/InteligenciaTerritorial'
 import AnaliseAbstencao from './pages/insights/AnaliseAbstencao'
 import CompetitividadeEleitoral from './pages/insights/CompetitividadeEleitoral'
+import DashboardInsights from './pages/insights/DashboardInsights'
 
 // Admin
 import GerenciarUsuarios from './pages/admin/GerenciarUsuarios'
@@ -98,6 +100,7 @@ export default function App() {
       <Route path="/resultados" element={<ProtectedRoute><Resultados /></ProtectedRoute>} />
       <Route path="/votos-nulos" element={<ProtectedRoute><VotosNulos /></ProtectedRoute>} />
       <Route path="/mapas" element={<ProtectedRoute><Mapas /></ProtectedRoute>} />
+      <Route path="/mapas-calor" element={<ProtectedRoute><MapasCalor /></ProtectedRoute>} />
       <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
       <Route path="/importar" element={<ProtectedRoute><Importar /></ProtectedRoute>} />
 
@@ -118,6 +121,7 @@ export default function App() {
       <Route path="/calculadora-metas" element={<ProtectedRoute><CalculadoraMetas /></ProtectedRoute>} />
 
       {/* Central de Insights */}
+      <Route path="/insights" element={<ProtectedRoute><DashboardInsights /></ProtectedRoute>} />
       <Route path="/insights/territorial" element={<ProtectedRoute><InteligenciaTerritorial /></ProtectedRoute>} />
       <Route path="/insights/abstencao" element={<ProtectedRoute><AnaliseAbstencao /></ProtectedRoute>} />
       <Route path="/insights/competitividade" element={<ProtectedRoute><CompetitividadeEleitoral /></ProtectedRoute>} />
