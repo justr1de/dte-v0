@@ -114,6 +114,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/insights/abstencao', icon: AlertTriangle, label: 'Análise de Abstenção' },
     { path: '/insights/competitividade', icon: Trophy, label: 'Competitividade Eleitoral' },
     { path: '/mapas-calor', icon: Map, label: 'Mapas de Calor Avançado' },
+    { path: '/mapa-interativo', icon: MapPin, label: 'Mapa Interativo' },
   ]
 
   const adminMenuItems = [

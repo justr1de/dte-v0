@@ -12,6 +12,7 @@ import Resultados from './pages/Resultados'
 import VotosNulos from './pages/VotosNulos'
 import Mapas from './pages/Mapas'
 import MapasCalor from './pages/MapasCalor'
+import MapaInterativo from './pages/MapaInterativo'
 import Relatorios from './pages/Relatorios'
 import Importar from './pages/Importar'
 import Usuarios from './pages/Usuarios'
@@ -101,6 +102,7 @@ export default function App() {
       <Route path="/votos-nulos" element={<ProtectedRoute><VotosNulos /></ProtectedRoute>} />
       <Route path="/mapas" element={<ProtectedRoute><Mapas /></ProtectedRoute>} />
       <Route path="/mapas-calor" element={<ProtectedRoute><MapasCalor /></ProtectedRoute>} />
+      <Route path="/mapa-interativo" element={<ProtectedRoute><MapaInterativo /></ProtectedRoute>} />
       <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
       <Route path="/importar" element={<ProtectedRoute><Importar /></ProtectedRoute>} />
 
