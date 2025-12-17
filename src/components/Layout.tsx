@@ -115,6 +115,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/insights/competitividade', icon: Trophy, label: 'Competitividade Eleitoral' },
     { path: '/mapas-calor', icon: Map, label: 'Mapas de Calor Avançado' },
     { path: '/mapa-interativo', icon: MapPin, label: 'Mapa Interativo' },
+    { path: '/mapa-calor-google', icon: Map, label: 'Mapa de Calor Google' },
   ]
 
   const adminMenuItems = [
