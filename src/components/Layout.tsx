@@ -39,7 +39,8 @@ import {
   Eye,
   MapPin,
   AlertTriangle,
-  Trophy
+  Trophy,
+  ThermometerSun
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -116,6 +117,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/mapas-calor', icon: Map, label: 'Mapas de Calor Avançado' },
     { path: '/mapa-interativo', icon: MapPin, label: 'Mapa Interativo' },
     { path: '/mapa-calor-google', icon: Map, label: 'Mapa de Calor Google' },
+    { path: '/mapa-calor-leaflet', icon: ThermometerSun, label: 'Mapa de Calor Dinâmico' },
   ]
 
   const adminMenuItems = [
