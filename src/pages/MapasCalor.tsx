@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { COORDENADAS_RO, CENTRO_RONDONIA, getCoordenadas } from '@/lib/coordenadasRO'
+import { CENTRO_RONDONIA, getCoordenadas } from '@/lib/coordenadasRO'
 import {
   MapPin,
   Layers,
@@ -16,7 +16,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 
 interface MunicipioData {
@@ -33,15 +33,6 @@ interface MunicipioData {
 }
 
 type MetricType = 'votos' | 'participacao' | 'abstencao' | 'eleitores'
-
-// Componente para atualizar o centro do mapa
-function MapUpdater({ center }: { center: [number, number] }) {
-  const map = useMap()
-  useEffect(() => {
-    map.setView(center, 7)
-  }, [center, map])
-  return null
-}
 
 export default function MapasCalor() {
   const [loading, setLoading] = useState(true)
@@ -346,15 +337,7 @@ export default function MapasCalor() {
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-                <span>Médio-Baixo</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 rounded-full bg-amber-500"></div>
                 <span>Médio</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 rounded-full bg-lime-500"></div>
-                <span>Médio-Alto</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 rounded-full bg-green-500"></div>
@@ -375,7 +358,6 @@ export default function MapasCalor() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MapUpdater center={CENTRO_RONDONIA} />
             
             {municipiosFiltrados.map((m) => {
               const value = getMetricValue(m)
@@ -402,8 +384,8 @@ export default function MapasCalor() {
                         <p><strong>Eleitores Aptos:</strong> {m.total_aptos.toLocaleString('pt-BR')}</p>
                         <p><strong>Comparecimento:</strong> {m.total_comparecimento.toLocaleString('pt-BR')}</p>
                         <p><strong>Abstenções:</strong> {m.total_abstencoes.toLocaleString('pt-BR')}</p>
-                        <p><strong>Participação:</strong> <span className="text-green-600">{m.participacao.toFixed(1)}%</span></p>
-                        <p><strong>Abstenção:</strong> <span className="text-red-600">{m.abstencao.toFixed(1)}%</span></p>
+                        <p><strong>Participação:</strong> <span style={{color: '#22c55e'}}>{m.participacao.toFixed(1)}%</span></p>
+                        <p><strong>Abstenção:</strong> <span style={{color: '#ef4444'}}>{m.abstencao.toFixed(1)}%</span></p>
                       </div>
                     </div>
                   </Popup>
