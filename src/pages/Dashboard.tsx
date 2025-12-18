@@ -119,14 +119,11 @@ export default function Dashboard() {
 
       if (perfilError) throw perfilError
 
-      // Buscar votos por partido - CORRIGIDO: filtrar por UF e aumentar limite
-      const { data: votosData, error: votosError } = await supabase
-        .from('boletins_urna')
-        .select('sg_partido, qt_votos')
-        .eq('ano_eleicao', filtroAno)
-        .eq('nr_turno', filtroTurno)
-        .eq('sg_uf', 'RO')  // FILTRO POR RONDÔNIA
-        .eq('ds_tipo_votavel', 'Nominal')
+      // Buscar votos por partido via função RPC (agregação no banco)
+      const { data: votosData, error: votosError } = await supabase.rpc('get_votos_por_partido', {
+        p_ano: filtroAno,
+        p_turno: filtroTurno
+      })
 
       if (votosError) throw votosError
 
@@ -177,24 +174,15 @@ export default function Dashboard() {
         totalAbstencoes
       })
 
-      // Agregar votos por partido
-      const partidosMap: Record<string, number> = {}
-      if (votosData) {
-        votosData.forEach((v: any) => {
-          const sigla = v.sg_partido || 'OUTROS'
-          partidosMap[sigla] = (partidosMap[sigla] || 0) + (v.qt_votos || 0)
-        })
-      }
-
-      const votosPartidoArr = Object.entries(partidosMap)
-        .map(([sigla, votos]) => ({
-          sigla,
-          nome: getNomePartido(sigla),
-          votos,
-          cor: getCorPartido(sigla)
-        }))
-        .sort((a, b) => b.votos - a.votos)
+      // Processar votos por partido (já vem agregado do banco)
+      const votosPartidoArr = (votosData || [])
         .slice(0, 10)
+        .map((v: any) => ({
+          sigla: v.sg_partido,
+          nome: v.nm_partido || getNomePartido(v.sg_partido),
+          votos: Number(v.total_votos) || 0,
+          cor: getCorPartido(v.sg_partido)
+        }))
 
       setVotosPartido(votosPartidoArr)
 
