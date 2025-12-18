@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Users, Search, Filter, Download, MapPin, Loader2, RefreshCw, GraduationCap } from 'lucide-react'
+import { Users, Search, Filter, Download, MapPin, Loader2, RefreshCw, GraduationCap, ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -36,6 +36,10 @@ export default function Eleitorado() {
   const [filtroMunicipio, setFiltroMunicipio] = useState<string>('todos')
   const [filtroZona, setFiltroZona] = useState<string>('todas')
   const [searchTerm, setSearchTerm] = useState('')
+  
+  // Paginação
+  const [page, setPage] = useState(1)
+  const itemsPerPage = 10
 
   useEffect(() => {
     fetchData()
@@ -92,6 +96,18 @@ export default function Eleitorado() {
 
     return filtered
   }, [perfis, filtroMunicipio, filtroZona, searchTerm])
+
+  // Reset página quando filtros mudam
+  useEffect(() => {
+    setPage(1)
+  }, [filtroMunicipio, filtroZona, searchTerm])
+
+  // Paginação
+  const totalPages = Math.ceil(perfisFiltrados.length / itemsPerPage)
+  const perfisPaginados = perfisFiltrados.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  )
 
   // Agregar dados dos perfis filtrados
   const dadosAgregados = useMemo((): DadosAgregados => {
@@ -440,13 +456,19 @@ export default function Eleitorado() {
             </div>
           </div>
 
-          {/* Tabela de Detalhes por Município */}
+          {/* Tabela de Detalhes por Município/Zona - COM PAGINAÇÃO */}
           <div className="card p-6">
-            <h2 className="text-lg font-semibold mb-4">Detalhamento por Município/Zona</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Detalhamento por Município/Zona</h2>
+              <span className="text-sm text-[var(--text-secondary)]">
+                Total: {perfisFiltrados.length} registros
+              </span>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[var(--border-color)]">
+                    <th className="text-left py-3 px-4">#</th>
                     <th className="text-left py-3 px-4">Município</th>
                     <th className="text-center py-3 px-4">Zona</th>
                     <th className="text-right py-3 px-4">Total Eleitores</th>
@@ -455,17 +477,26 @@ export default function Eleitorado() {
                   </tr>
                 </thead>
                 <tbody>
-                  {perfisFiltrados.slice(0, 20).map((p, index) => {
+                  {perfisPaginados.map((p, index) => {
+                    const globalIndex = (page - 1) * itemsPerPage + index
                     const genero = JSON.parse(p.dados_genero)
                     return (
-                      <tr key={p.id} className={index % 2 === 0 ? 'bg-[var(--bg-secondary)]' : ''}>
+                      <tr 
+                        key={p.id} 
+                        className={`border-b border-[var(--border-color)]/50 hover:bg-[var(--bg-secondary)]/50 transition-colors ${globalIndex % 2 === 0 ? 'bg-[var(--bg-secondary)]/30' : ''}`}
+                      >
+                        <td className="py-3 px-4 text-[var(--text-muted)]">{globalIndex + 1}</td>
                         <td className="py-3 px-4 font-medium">{p.municipio}</td>
-                        <td className="py-3 px-4 text-center">{p.zona}</td>
-                        <td className="py-3 px-4 text-right">{p.total_eleitores.toLocaleString('pt-BR')}</td>
-                        <td className="py-3 px-4 text-right text-pink-500">
+                        <td className="py-3 px-4 text-center">
+                          <span className="px-2 py-1 rounded bg-[var(--bg-tertiary)] text-sm">
+                            {p.zona}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold">{p.total_eleitores.toLocaleString('pt-BR')}</td>
+                        <td className="py-3 px-4 text-right text-pink-500 font-medium">
                           {(genero.FEMININO || 0).toLocaleString('pt-BR')}
                         </td>
-                        <td className="py-3 px-4 text-right text-blue-500">
+                        <td className="py-3 px-4 text-right text-blue-500 font-medium">
                           {(genero.MASCULINO || 0).toLocaleString('pt-BR')}
                         </td>
                       </tr>
@@ -473,11 +504,70 @@ export default function Eleitorado() {
                   })}
                 </tbody>
               </table>
-              {perfisFiltrados.length > 20 && (
-                <p className="text-center text-[var(--text-secondary)] mt-4">
-                  Mostrando 20 de {perfisFiltrados.length} registros. Exporte para ver todos.
-                </p>
-              )}
+            </div>
+            
+            {/* Controles de Paginação */}
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border-color)]">
+              <p className="text-sm text-[var(--text-secondary)]">
+                Mostrando {((page - 1) * itemsPerPage) + 1} a {Math.min(page * itemsPerPage, perfisFiltrados.length)} de {perfisFiltrados.length} registros
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(1)}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors text-sm"
+                >
+                  Primeira
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (page <= 3) {
+                      pageNum = i + 1
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = page - 2 + i
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
+                          page === pageNum 
+                            ? 'bg-[var(--accent-color)] text-white' 
+                            : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                </div>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="p-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setPage(totalPages)}
+                  disabled={page === totalPages}
+                  className="px-3 py-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors text-sm"
+                >
+                  Última
+                </button>
+              </div>
             </div>
           </div>
         </>
