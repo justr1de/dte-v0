@@ -68,52 +68,50 @@ export interface Campanha {
   created_at: string
 }
 
-// Funções para chamar Edge Functions
+// Função para criar usuário via Database Function (RPC)
 export async function createUserViaEdgeFunction(data: {
   email: string
   password: string
   name: string
   role: string
 }) {
-  const { data: session } = await supabase.auth.getSession()
-  
-  const response = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session?.session?.access_token}`,
-      'apikey': supabaseAnonKey
-    },
-    body: JSON.stringify(data)
+  // Usar a função SQL create_dte_user via RPC
+  const { data: result, error } = await supabase.rpc('create_dte_user', {
+    p_email: data.email,
+    p_password: data.password,
+    p_name: data.name,
+    p_role: data.role
   })
 
-  const result = await response.json()
-  
-  if (!response.ok) {
+  if (error) {
+    console.error('Erro ao criar usuário:', error)
+    throw new Error(error.message || 'Erro ao criar usuário')
+  }
+
+  // O resultado é um JSON retornado pela função
+  if (result && !result.success) {
     throw new Error(result.error || 'Erro ao criar usuário')
   }
-  
+
   return result
 }
 
+// Função para deletar usuário
 export async function deleteUserViaEdgeFunction(userId: string, openId: string) {
-  const { data: session } = await supabase.auth.getSession()
-  
-  const response = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session?.session?.access_token}`,
-      'apikey': supabaseAnonKey
-    },
-    body: JSON.stringify({ userId, openId })
-  })
+  // Primeiro, deletar da tabela users
+  const { error: dbError } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', userId)
 
-  const result = await response.json()
-  
-  if (!response.ok) {
-    throw new Error(result.error || 'Erro ao deletar usuário')
+  if (dbError) {
+    console.error('Erro ao deletar usuário da tabela:', dbError)
+    throw new Error(dbError.message || 'Erro ao deletar usuário')
   }
+
+  // Nota: A deleção do auth.users requer service_role key
+  // Por enquanto, apenas desativamos o usuário na tabela users
+  // O usuário do auth.users pode ser deletado manualmente no painel do Supabase
   
-  return result
+  return { success: true }
 }
