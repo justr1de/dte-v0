@@ -1,252 +1,114 @@
-import { useEffect, useState, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
-import { CENTRO_RONDONIA, getCoordenadas } from '@/lib/coordenadasRO'
-import {
-  MapPin,
-  Layers,
-  Filter,
-  Download,
-  RefreshCw,
-  Info,
-  Loader2,
-  ThermometerSun,
-  Users,
-  Vote,
-  TrendingUp,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Users, RefreshCw, Download, Filter, ThermometerSun, TrendingUp, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 
-interface MunicipioData {
-  cd_municipio: number
-  nm_municipio: string
-  total_votos: number
-  total_aptos: number
-  total_comparecimento: number
-  total_abstencoes: number
-  participacao: number
-  abstencao: number
-  latitude: number
-  longitude: number
+// Interface baseada no retorno da RPC documentada
+interface DadosEleitorais {
+  cd_municipio: number;
+  nm_municipio: string;
+  total_votos: number;
+  total_aptos: number;
+  total_comparecimento: number;
+  total_abstencoes: number;
+  participacao: number;
+  abstencao: number;
 }
 
-type MetricType = 'votos' | 'participacao' | 'abstencao' | 'eleitores'
-
 export default function MapasCalor() {
-  const [loading, setLoading] = useState(true)
-  const [municipios, setMunicipios] = useState<MunicipioData[]>([])
-  const [filtroAno, setFiltroAno] = useState<number>(2024)
-  const [filtroTurno, setFiltroTurno] = useState<number>(1)
-  const [metricaSelecionada, setMetricaSelecionada] = useState<MetricType>('votos')
-  const [filtroMunicipio, setFiltroMunicipio] = useState<string>('todos')
-  const [paginaAtual, setPaginaAtual] = useState(1)
-  const itensPorPagina = 15
-  
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<L.Map | null>(null)
-  const markersRef = useRef<L.CircleMarker[]>([])
+  const [dados, setDados] = useState<DadosEleitorais[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [maxVotos, setMaxVotos] = useState(0);
+  const [filtroAno, setFiltroAno] = useState<number>(2024);
+  const [filtroTurno, setFiltroTurno] = useState<number>(1);
+  const [filtroMunicipio, setFiltroMunicipio] = useState<string>('todos');
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const itensPorPagina = 18; // 6 colunas x 3 linhas
 
   useEffect(() => {
-    fetchData()
-  }, [filtroAno, filtroTurno])
+    fetchDados();
+  }, [filtroAno, filtroTurno]);
 
-  // Inicializar mapa
-  useEffect(() => {
-    if (mapRef.current && !mapInstanceRef.current) {
-      mapInstanceRef.current = L.map(mapRef.current).setView(CENTRO_RONDONIA, 7)
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      }).addTo(mapInstanceRef.current)
-    }
-    
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
-        mapInstanceRef.current = null
-      }
-    }
-  }, [])
-
-  // Atualizar marcadores quando dados mudam
-  useEffect(() => {
-    if (!mapInstanceRef.current) return
-    
-    // Remover marcadores antigos
-    markersRef.current.forEach(marker => marker.remove())
-    markersRef.current = []
-    
-    const municipiosFiltrados = filtroMunicipio === 'todos' 
-      ? municipios 
-      : municipios.filter(m => m.nm_municipio === filtroMunicipio)
-    
-    const maxValue = Math.max(...municipiosFiltrados.map(m => getMetricValue(m)), 1)
-    
-    municipiosFiltrados.forEach(m => {
-      const value = getMetricValue(m)
-      const color = getColor(value, maxValue, metricaSelecionada)
-      const radius = getRadius(value, maxValue)
-      
-      const marker = L.circleMarker([m.latitude, m.longitude], {
-        radius: radius,
-        fillColor: color,
-        fillOpacity: 0.7,
-        color: color,
-        weight: 2
-      }).addTo(mapInstanceRef.current!)
-      
-      marker.bindPopup(`
-        <div style="min-width: 200px; padding: 8px;">
-          <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${m.nm_municipio}</h3>
-          <div style="font-size: 14px; line-height: 1.6;">
-            <p><strong>Total de Votos:</strong> ${m.total_votos.toLocaleString('pt-BR')}</p>
-            <p><strong>Eleitores Aptos:</strong> ${m.total_aptos.toLocaleString('pt-BR')}</p>
-            <p><strong>Comparecimento:</strong> ${m.total_comparecimento.toLocaleString('pt-BR')}</p>
-            <p><strong>Abstenções:</strong> ${m.total_abstencoes.toLocaleString('pt-BR')}</p>
-            <p><strong>Participação:</strong> <span style="color: #22c55e;">${m.participacao.toFixed(1)}%</span></p>
-            <p><strong>Abstenção:</strong> <span style="color: #ef4444;">${m.abstencao.toFixed(1)}%</span></p>
-          </div>
-        </div>
-      `)
-      
-      markersRef.current.push(marker)
-    })
-  }, [municipios, filtroMunicipio, metricaSelecionada])
-
-  const fetchData = async () => {
-    setLoading(true)
+  async function fetchDados() {
     try {
-      const { data, error } = await supabase.rpc('get_mapa_eleitoral', {
-        p_ano: filtroAno,
-        p_turno: filtroTurno
-      })
+      setLoading(true);
+      // RPC documentada na página 7 do PDF
+      const { data, error } = await supabase
+        .rpc('get_mapa_eleitoral', { p_ano: filtroAno, p_turno: filtroTurno });
 
-      if (error) throw error
+      if (error) throw error;
 
-      if (data && data.length > 0) {
-        const municipiosComCoordenadas = data.map((m: any) => {
-          const coords = getCoordenadas(m.nm_municipio)
-          return {
-            ...m,
-            latitude: coords ? coords[0] : CENTRO_RONDONIA[0],
-            longitude: coords ? coords[1] : CENTRO_RONDONIA[1]
-          }
-        }).filter((m: any) => m.latitude && m.longitude)
-
-        setMunicipios(municipiosComCoordenadas.sort((a: any, b: any) => b.total_votos - a.total_votos))
+      if (data) {
+        // Ordena por total de votos para o grid ficar organizado do "mais quente" para o "mais frio"
+        const dadosOrdenados = data.sort((a: DadosEleitorais, b: DadosEleitorais) => b.total_votos - a.total_votos);
+        
+        // Encontra o maior valor para calcular a escala de cor (0 a 100%)
+        const max = Math.max(...data.map((d: DadosEleitorais) => d.total_votos));
+        
+        setMaxVotos(max);
+        setDados(dadosOrdenados);
       }
     } catch (error) {
-      console.error('Erro ao buscar dados:', error)
+      console.error("Erro ao buscar dados:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  const municipiosFiltrados = filtroMunicipio === 'todos' 
-    ? municipios 
-    : municipios.filter(m => m.nm_municipio === filtroMunicipio)
+  // Função para gerar a cor baseada na intensidade (Heatmap Logic)
+  const getHeatColor = (valor: number, max: number) => {
+    const ratio = valor / max;
+    
+    // Escala de cor: 
+    // < 10% (Muito Frio - Cinza/Azul Claro)
+    // > 80% (Muito Quente - Vermelho Intenso)
+    if (ratio > 0.8) return 'bg-red-600 text-white border-red-700';
+    if (ratio > 0.6) return 'bg-orange-500 text-white border-orange-600';
+    if (ratio > 0.4) return 'bg-yellow-400 text-black border-yellow-500';
+    if (ratio > 0.2) return 'bg-blue-300 text-black border-blue-400';
+    return 'bg-slate-200 text-slate-700 border-slate-300';
+  };
 
-  const totalPaginas = Math.ceil(municipiosFiltrados.length / itensPorPagina)
-  const indiceInicio = (paginaAtual - 1) * itensPorPagina
-  const indiceFim = indiceInicio + itensPorPagina
-  const municipiosPaginados = municipiosFiltrados.slice(indiceInicio, indiceFim)
+  // Filtrar dados
+  const dadosFiltrados = filtroMunicipio === 'todos' 
+    ? dados 
+    : dados.filter(m => m.nm_municipio === filtroMunicipio);
+
+  // Paginação
+  const totalPaginas = Math.ceil(dadosFiltrados.length / itensPorPagina);
+  const indiceInicio = (paginaAtual - 1) * itensPorPagina;
+  const indiceFim = indiceInicio + itensPorPagina;
+  const dadosPaginados = dadosFiltrados.slice(indiceInicio, indiceFim);
 
   useEffect(() => {
-    setPaginaAtual(1)
-  }, [filtroMunicipio, filtroAno, filtroTurno])
+    setPaginaAtual(1);
+  }, [filtroMunicipio, filtroAno, filtroTurno]);
 
-  const getColor = (value: number, max: number, metric: MetricType): string => {
-    const ratio = max > 0 ? value / max : 0
-    if (metric === 'abstencao') {
-      if (ratio > 0.8) return '#ef4444'
-      if (ratio > 0.6) return '#f97316'
-      if (ratio > 0.4) return '#f59e0b'
-      if (ratio > 0.2) return '#84cc16'
-      return '#22c55e'
-    } else {
-      if (ratio > 0.8) return '#22c55e'
-      if (ratio > 0.6) return '#84cc16'
-      if (ratio > 0.4) return '#f59e0b'
-      if (ratio > 0.2) return '#f97316'
-      return '#ef4444'
-    }
-  }
-
-  const getMetricValue = (m: MunicipioData): number => {
-    switch (metricaSelecionada) {
-      case 'votos': return m.total_votos
-      case 'participacao': return m.participacao
-      case 'abstencao': return m.abstencao
-      case 'eleitores': return m.total_aptos
-      default: return m.total_votos
-    }
-  }
-
-  const getMetricLabel = (metric: MetricType): string => {
-    switch (metric) {
-      case 'votos': return 'Total de Votos'
-      case 'participacao': return 'Participação (%)'
-      case 'abstencao': return 'Abstenção (%)'
-      case 'eleitores': return 'Eleitores Aptos'
-      default: return 'Total de Votos'
-    }
-  }
-
-  const maxValue = Math.max(...municipiosFiltrados.map(m => getMetricValue(m)), 1)
-
-  const getRadius = (value: number, max: number): number => {
-    const minRadius = 8
-    const maxRadius = 35
-    const ratio = max > 0 ? value / max : 0
-    return minRadius + (maxRadius - minRadius) * ratio
-  }
-
-  const metricas = [
-    { key: 'votos' as MetricType, label: 'Total de Votos', icon: Vote },
-    { key: 'participacao' as MetricType, label: 'Participação (%)', icon: TrendingUp },
-    { key: 'abstencao' as MetricType, label: 'Abstenção (%)', icon: Users },
-    { key: 'eleitores' as MetricType, label: 'Eleitores Aptos', icon: Users },
-  ]
-
-  const totalVotos = municipios.reduce((acc, m) => acc + m.total_votos, 0)
-  const totalEleitores = municipios.reduce((acc, m) => acc + m.total_aptos, 0)
+  // Estatísticas
+  const totalVotos = dados.reduce((acc, m) => acc + m.total_votos, 0);
+  const totalEleitores = dados.reduce((acc, m) => acc + m.total_aptos, 0);
   const participacaoMedia = totalEleitores > 0 
-    ? (municipios.reduce((acc, m) => acc + m.total_comparecimento, 0) / totalEleitores) * 100 
-    : 0
+    ? (dados.reduce((acc, m) => acc + m.total_comparecimento, 0) / totalEleitores) * 100 
+    : 0;
 
+  // Exportar CSV
   const exportarCSV = () => {
-    const headers = ['#', 'Município', 'Total Votos', 'Eleitores Aptos', 'Comparecimento', 'Abstenções', 'Participação (%)', 'Abstenção (%)', 'Latitude', 'Longitude']
-    const rows = municipiosFiltrados.map((m, i) => [
+    const headers = ['#', 'Município', 'Total Votos', 'Eleitores Aptos', 'Participação (%)', 'Abstenção (%)'];
+    const rows = dadosFiltrados.map((m, i) => [
       i + 1,
       m.nm_municipio,
       m.total_votos,
       m.total_aptos,
-      m.total_comparecimento,
-      m.total_abstencoes,
       m.participacao.toFixed(2),
-      m.abstencao.toFixed(2),
-      m.latitude,
-      m.longitude
-    ])
+      m.abstencao.toFixed(2)
+    ]);
     
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `mapa_calor_ro_${filtroAno}_turno${filtroTurno}.csv`
-    link.click()
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-color)]" />
-        <span className="ml-2">Carregando dados do mapa...</span>
-      </div>
-    )
-  }
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `mapa_calor_ro_${filtroAno}_turno${filtroTurno}.csv`;
+    link.click();
+  };
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -255,9 +117,11 @@ export default function MapasCalor() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <ThermometerSun className="w-7 h-7 text-[var(--accent-color)]" />
-            Mapas de Calor
+            Mapa de Calor: Concentração de Votos
           </h1>
-          <p className="text-[var(--text-secondary)]">Visualização geográfica dos dados eleitorais de Rondônia</p>
+          <p className="text-[var(--text-secondary)]">
+            Visualização da intensidade de votação por município - Eleições {filtroAno}
+          </p>
         </div>
         <div className="flex gap-3">
           <select
@@ -277,7 +141,7 @@ export default function MapasCalor() {
             <option value={2}>2º Turno</option>
           </select>
           <button
-            onClick={fetchData}
+            onClick={fetchDados}
             className="px-4 py-2 rounded-lg bg-[var(--accent-color)] text-white flex items-center gap-2"
           >
             <RefreshCw className="w-4 h-4" />
@@ -291,7 +155,7 @@ export default function MapasCalor() {
         <div className="card p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-500/20">
-              <Vote className="w-5 h-5 text-blue-500" />
+              <TrendingUp className="w-5 h-5 text-blue-500" />
             </div>
             <div>
               <p className="text-sm text-[var(--text-secondary)]">Total de Votos</p>
@@ -328,240 +192,211 @@ export default function MapasCalor() {
             </div>
             <div>
               <p className="text-sm text-[var(--text-secondary)]">Municípios</p>
-              <p className="text-xl font-bold">{municipios.length}</p>
+              <p className="text-xl font-bold">{dados.length}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Filtros */}
+      {/* Legenda de Cores */}
       <div className="card p-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-[var(--accent-color)]" />
-            <span className="font-semibold">Filtros:</span>
-          </div>
-          <select
-            value={filtroMunicipio}
-            onChange={(e) => setFiltroMunicipio(e.target.value)}
-            className="px-4 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] flex-1 md:flex-none md:w-64"
-          >
-            <option value="todos">Todos os municípios ({municipios.length})</option>
-            {municipios.map(m => (
-              <option key={m.cd_municipio} value={m.nm_municipio}>{m.nm_municipio}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Seletor de Métrica */}
-      <div className="card p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Layers className="w-5 h-5 text-[var(--accent-color)]" />
-          <span className="font-semibold">Métrica de Visualização</span>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {metricas.map(m => (
-            <button
-              key={m.key}
-              onClick={() => setMetricaSelecionada(m.key)}
-              className={`p-3 rounded-lg border flex items-center gap-2 transition-all ${
-                metricaSelecionada === m.key
-                  ? 'border-[var(--accent-color)] bg-[var(--accent-color)]/10'
-                  : 'border-[var(--border-color)] hover:border-[var(--accent-color)]/50'
-              }`}
-            >
-              <m.icon className="w-5 h-5" />
-              <span className="text-sm">{m.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Mapa Leaflet */}
-      <div className="card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-[var(--accent-color)]" />
-            <h2 className="text-lg font-semibold">Mapa de Calor - {getMetricLabel(metricaSelecionada)}</h2>
-          </div>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-[var(--text-secondary)]">Legenda:</span>
+            <span className="font-semibold">Legenda de Intensidade:</span>
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
-                <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                <span>Baixo</span>
+                <div className="w-6 h-6 rounded bg-red-600"></div>
+                <span className="text-sm">Muito Alto (&gt;80%)</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-                <span>Médio</span>
+                <div className="w-6 h-6 rounded bg-orange-500"></div>
+                <span className="text-sm">Alto (60-80%)</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-4 h-4 rounded-full bg-green-500"></div>
-                <span>Alto</span>
+                <div className="w-6 h-6 rounded bg-yellow-400"></div>
+                <span className="text-sm">Médio (40-60%)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-6 h-6 rounded bg-blue-300"></div>
+                <span className="text-sm">Baixo (20-40%)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-6 h-6 rounded bg-slate-200"></div>
+                <span className="text-sm">Muito Baixo (&lt;20%)</span>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div 
-          ref={mapRef}
-          className="h-[500px] rounded-lg overflow-hidden border border-[var(--border-color)]"
-          style={{ zIndex: 1 }}
-        />
-        
-        <div className="mt-4 p-4 bg-[var(--bg-secondary)] rounded-lg">
-          <div className="flex items-start gap-2">
-            <Info className="w-5 h-5 text-[var(--accent-color)] flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-[var(--text-secondary)]">
-              <p><strong>Como interpretar:</strong> O tamanho e a cor dos círculos representam a intensidade da métrica selecionada.</p>
-              <p className="mt-1">Círculos maiores e mais verdes indicam valores mais altos (exceto para abstenção, onde vermelho indica maior abstenção).</p>
-              <p className="mt-1">Clique em um círculo para ver detalhes do município.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Ranking por Município */}
-      <div className="card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[var(--accent-color)]" />
-            <h2 className="text-lg font-semibold">Ranking por Município - {getMetricLabel(metricaSelecionada)}</h2>
           </div>
           <button 
             onClick={exportarCSV}
             className="px-4 py-2 rounded-lg border border-[var(--border-color)] flex items-center gap-2 hover:bg-[var(--bg-secondary)]"
           >
             <Download className="w-4 h-4" />
-            Exportar
+            Exportar CSV
           </button>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[var(--border-color)]">
-                <th className="text-left p-3 font-semibold">#</th>
-                <th className="text-left p-3 font-semibold">Município</th>
-                <th className="text-right p-3 font-semibold">Total Votos</th>
-                <th className="text-right p-3 font-semibold">Eleitores Aptos</th>
-                <th className="text-right p-3 font-semibold">Participação</th>
-                <th className="text-right p-3 font-semibold">Abstenção</th>
-                <th className="text-center p-3 font-semibold">Intensidade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {municipiosPaginados.map((m, index) => {
-                const value = getMetricValue(m)
-                const color = getColor(value, maxValue, metricaSelecionada)
-                const globalIndex = indiceInicio + index + 1
-                return (
-                  <tr key={m.cd_municipio} className={`border-b border-[var(--border-color)] hover:bg-[var(--bg-secondary)] ${index % 2 === 0 ? 'bg-[var(--bg-secondary)]/30' : ''}`}>
-                    <td className="p-3 text-[var(--text-secondary)]">{globalIndex}</td>
-                    <td className="p-3 font-medium">{m.nm_municipio}</td>
-                    <td className="p-3 text-right">{m.total_votos.toLocaleString('pt-BR')}</td>
-                    <td className="p-3 text-right">{m.total_aptos.toLocaleString('pt-BR')}</td>
-                    <td className="p-3 text-right">
-                      <span className="text-green-500 font-medium">{m.participacao.toFixed(1)}%</span>
-                    </td>
-                    <td className="p-3 text-right">
-                      <span className="text-red-500 font-medium">{m.abstencao.toFixed(1)}%</span>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex justify-center">
-                        <div
-                          className="w-8 h-8 rounded-full"
-                          style={{ backgroundColor: color }}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Paginação */}
-        {totalPaginas > 1 && (
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border-color)]">
-            <span className="text-sm text-[var(--text-secondary)]">
-              Mostrando {indiceInicio + 1} a {Math.min(indiceFim, municipiosFiltrados.length)} de {municipiosFiltrados.length} municípios
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPaginaAtual(1)}
-                disabled={paginaAtual === 1}
-                className="px-3 py-1 rounded border border-[var(--border-color)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]"
-              >
-                Primeira
-              </button>
-              <button
-                onClick={() => setPaginaAtual(p => Math.max(1, p - 1))}
-                disabled={paginaAtual === 1}
-                className="p-2 rounded border border-[var(--border-color)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              
-              {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
-                let pageNum
-                if (totalPaginas <= 5) {
-                  pageNum = i + 1
-                } else if (paginaAtual <= 3) {
-                  pageNum = i + 1
-                } else if (paginaAtual >= totalPaginas - 2) {
-                  pageNum = totalPaginas - 4 + i
-                } else {
-                  pageNum = paginaAtual - 2 + i
-                }
-                
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setPaginaAtual(pageNum)}
-                    className={`px-3 py-1 rounded border ${
-                      paginaAtual === pageNum
-                        ? 'bg-[var(--accent-color)] text-white border-[var(--accent-color)]'
-                        : 'border-[var(--border-color)] hover:bg-[var(--bg-secondary)]'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                )
-              })}
-              
-              <button
-                onClick={() => setPaginaAtual(p => Math.min(totalPaginas, p + 1))}
-                disabled={paginaAtual === totalPaginas}
-                className="p-2 rounded border border-[var(--border-color)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setPaginaAtual(totalPaginas)}
-                disabled={paginaAtual === totalPaginas}
-                className="px-3 py-1 rounded border border-[var(--border-color)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]"
-              >
-                Última
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Filtro de Município */}
+      <div className="card p-4">
+        <div className="flex items-center gap-4">
+          <Filter className="w-5 h-5 text-[var(--accent-color)]" />
+          <span className="font-semibold">Filtrar:</span>
+          <select
+            value={filtroMunicipio}
+            onChange={(e) => setFiltroMunicipio(e.target.value)}
+            className="px-4 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] flex-1 md:flex-none md:w-64"
+          >
+            <option value="todos">Todos os municípios ({dados.length})</option>
+            {dados.map(m => (
+              <option key={m.cd_municipio} value={m.nm_municipio}>{m.nm_municipio}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Grid de Cards (Mapa de Calor) */}
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent-color)]"></div>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {dadosPaginados.map((municipio, index) => {
+              const colorClass = getHeatColor(municipio.total_votos, maxVotos);
+              const globalIndex = indiceInicio + index + 1;
+              
+              return (
+                <div 
+                  key={municipio.cd_municipio}
+                  className={`p-4 rounded-lg shadow-sm border transition-all hover:scale-105 cursor-default ${colorClass}`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-[10px] font-bold bg-black/20 px-1.5 py-0.5 rounded">
+                      #{globalIndex}
+                    </span>
+                    {/* Ícone muda se for "quente" ou "frio" */}
+                    {municipio.total_votos > (maxVotos * 0.5) && <Users size={16} className="opacity-70" />}
+                  </div>
+                  
+                  <div className="mb-2">
+                    <span className="text-xs font-semibold uppercase leading-tight block">
+                      {municipio.nm_municipio}
+                    </span>
+                  </div>
+                  
+                  <div className="mt-2">
+                    <span className="text-2xl font-bold block">
+                      {municipio.total_votos.toLocaleString('pt-BR')}
+                    </span>
+                    <span className="text-xs opacity-75">votos computados</span>
+                  </div>
+
+                  {/* Barra de progresso visual relativa ao maior colégio */}
+                  <div className="w-full bg-black/10 h-1.5 mt-4 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-current opacity-80" 
+                      style={{ width: `${(municipio.total_votos / maxVotos) * 100}%` }}
+                    />
+                  </div>
+                  
+                  <div className="mt-3 flex gap-2 text-[10px] opacity-80">
+                     <span className="text-green-900">Part: {municipio.participacao?.toFixed(1) || 0}%</span>
+                     <span>•</span>
+                     <span className="text-red-900">Abs: {municipio.abstencao?.toFixed(1) || 0}%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Paginação */}
+          {totalPaginas > 1 && (
+            <div className="card p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-[var(--text-secondary)]">
+                  Mostrando {indiceInicio + 1} a {Math.min(indiceFim, dadosFiltrados.length)} de {dadosFiltrados.length} municípios
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPaginaAtual(1)}
+                    disabled={paginaAtual === 1}
+                    className="px-3 py-1 rounded border border-[var(--border-color)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]"
+                  >
+                    Primeira
+                  </button>
+                  <button
+                    onClick={() => setPaginaAtual(p => Math.max(1, p - 1))}
+                    disabled={paginaAtual === 1}
+                    className="p-2 rounded border border-[var(--border-color)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  
+                  {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
+                    let pageNum;
+                    if (totalPaginas <= 5) {
+                      pageNum = i + 1;
+                    } else if (paginaAtual <= 3) {
+                      pageNum = i + 1;
+                    } else if (paginaAtual >= totalPaginas - 2) {
+                      pageNum = totalPaginas - 4 + i;
+                    } else {
+                      pageNum = paginaAtual - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPaginaAtual(pageNum)}
+                        className={`px-3 py-1 rounded border ${
+                          paginaAtual === pageNum
+                            ? 'bg-[var(--accent-color)] text-white border-[var(--accent-color)]'
+                            : 'border-[var(--border-color)] hover:bg-[var(--bg-secondary)]'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => setPaginaAtual(p => Math.min(totalPaginas, p + 1))}
+                    disabled={paginaAtual === totalPaginas}
+                    className="p-2 rounded border border-[var(--border-color)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setPaginaAtual(totalPaginas)}
+                    disabled={paginaAtual === totalPaginas}
+                    className="px-3 py-1 rounded border border-[var(--border-color)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]"
+                  >
+                    Última
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Informações sobre a visualização */}
       <div className="card p-6 bg-blue-500/10 border-blue-500/20">
         <div className="flex items-start gap-3">
-          <Info className="w-6 h-6 text-blue-500 flex-shrink-0 mt-1" />
+          <ThermometerSun className="w-6 h-6 text-blue-500 flex-shrink-0 mt-1" />
           <div>
             <h3 className="font-semibold text-blue-500 mb-2">Sobre a Visualização</h3>
             <p className="text-sm text-[var(--text-secondary)]">
-              Este mapa de calor utiliza dados oficiais do TSE (Tribunal Superior Eleitoral) agregados pela função 
+              Este mapa de calor em grid utiliza dados oficiais do TSE (Tribunal Superior Eleitoral) agregados pela função 
               <code className="mx-1 px-1 py-0.5 bg-[var(--bg-secondary)] rounded">get_mapa_eleitoral</code>.
-              As coordenadas geográficas dos 52 municípios de Rondônia foram mapeadas manualmente para permitir 
-              a visualização espacial dos dados eleitorais.
+              Os cards são ordenados do município com mais votos (mais "quente") para o com menos votos (mais "frio"),
+              criando uma visualização intuitiva da concentração eleitoral em Rondônia.
+            </p>
+            <p className="text-sm text-[var(--text-secondary)] mt-2">
+              <strong>Interpretação:</strong> Cards vermelhos/laranjas indicam municípios com alta concentração de votos,
+              enquanto cards azuis/cinzas indicam menor concentração. A barra de progresso mostra a proporção relativa
+              ao município com mais votos.
             </p>
             <p className="text-sm text-[var(--text-secondary)] mt-2">
               <strong>Fonte dos dados:</strong> Portal de Dados Abertos do TSE - Boletins de Urna consolidados.
@@ -570,5 +405,5 @@ export default function MapasCalor() {
         </div>
       </div>
     </div>
-  )
+  );
 }
