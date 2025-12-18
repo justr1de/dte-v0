@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
   MapPin,
@@ -16,25 +16,8 @@ import {
   Maximize2,
   Info
 } from 'lucide-react'
-import { MapContainer, TileLayer, useMap, GeoJSON, Tooltip, CircleMarker, Popup } from 'react-leaflet'
-import L from 'leaflet'
+import { MapContainer, TileLayer, useMap, CircleMarker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import 'leaflet.heat'
-
-// Declaração de tipo para leaflet.heat
-declare module 'leaflet' {
-  function heatLayer(
-    latlngs: Array<[number, number, number?]>,
-    options?: {
-      minOpacity?: number
-      maxZoom?: number
-      max?: number
-      radius?: number
-      blur?: number
-      gradient?: { [key: number]: string }
-    }
-  ): L.Layer
-}
 
 interface MunicipioData {
   cd_municipio: number
@@ -135,42 +118,6 @@ function MapControls() {
   )
 }
 
-// Componente do HeatmapLayer
-function HeatmapLayer({ 
-  points, 
-  options 
-}: { 
-  points: Array<[number, number, number]>
-  options: {
-    radius?: number
-    blur?: number
-    maxZoom?: number
-    max?: number
-    gradient?: { [key: number]: string }
-  }
-}) {
-  const map = useMap()
-  const heatLayerRef = useRef<L.Layer | null>(null)
-
-  useEffect(() => {
-    if (heatLayerRef.current) {
-      map.removeLayer(heatLayerRef.current)
-    }
-
-    if (points.length > 0) {
-      heatLayerRef.current = L.heatLayer(points, options).addTo(map)
-    }
-
-    return () => {
-      if (heatLayerRef.current) {
-        map.removeLayer(heatLayerRef.current)
-      }
-    }
-  }, [map, points, options])
-
-  return null
-}
-
 export default function Mapas() {
   const [loading, setLoading] = useState(true)
   const [municipios, setMunicipios] = useState<MunicipioData[]>([])
@@ -178,7 +125,6 @@ export default function Mapas() {
   const [filtroTurno, setFiltroTurno] = useState<number>(1)
   const [filtroMunicipio, setFiltroMunicipio] = useState<string>('todos')
   const [metricaSelecionada, setMetricaSelecionada] = useState<MetricType>('votos')
-  const [raioCalor, setRaioCalor] = useState<number>(30)
   const [listaMunicipios, setListaMunicipios] = useState<string[]>([])
   const [totalVotosGeral, setTotalVotosGeral] = useState(0)
   const [totalEleitores, setTotalEleitores] = useState(0)
@@ -272,60 +218,31 @@ export default function Mapas() {
     return municipios.filter(m => m.nm_municipio?.toUpperCase() === filtroMunicipio)
   }, [municipios, filtroMunicipio])
 
-  const heatmapPoints = useMemo((): Array<[number, number, number]> => {
-    const maxValue = Math.max(...filteredData.map(m => getMetricValue(m)), 1)
-    
-    // Criar múltiplos pontos por município para melhor visualização
-    const points: Array<[number, number, number]> = []
-    
-    filteredData.forEach(m => {
-      const value = getMetricValue(m)
-      const intensity = value / maxValue
-      
-      // Adicionar ponto central
-      points.push([m.latitude, m.longitude, intensity])
-      
-      // Adicionar pontos extras para municípios com mais votos (para criar efeito de área maior)
-      if (intensity > 0.3) {
-        const spread = 0.05 * intensity
-        points.push([m.latitude + spread, m.longitude, intensity * 0.7])
-        points.push([m.latitude - spread, m.longitude, intensity * 0.7])
-        points.push([m.latitude, m.longitude + spread, intensity * 0.7])
-        points.push([m.latitude, m.longitude - spread, intensity * 0.7])
-      }
-    })
-    
-    return points
-  }, [filteredData, metricaSelecionada])
-
-  const heatmapOptions = useMemo(() => {
-    const gradient = metricaSelecionada === 'abstencao'
-      ? { 0.2: '#22c55e', 0.4: '#84cc16', 0.6: '#f59e0b', 0.8: '#f97316', 1: '#ef4444' }
-      : { 0.2: '#3b82f6', 0.4: '#06b6d4', 0.6: '#22c55e', 0.8: '#f59e0b', 1: '#ef4444' }
-    
-    return {
-      radius: raioCalor,
-      blur: 20,
-      maxZoom: 17,
-      max: 1.0,
-      gradient
-    }
-  }, [raioCalor, metricaSelecionada])
-
-  const getMarkerColor = (m: MunicipioData): string => {
+  // Calcular tamanho e cor do marcador baseado na métrica
+  const getMarkerProps = (m: MunicipioData) => {
     const maxValue = Math.max(...municipios.map(mun => getMetricValue(mun)), 1)
     const value = getMetricValue(m)
     const ratio = value / maxValue
     
+    // Tamanho do marcador baseado na métrica (entre 8 e 30)
+    const radius = 8 + (ratio * 22)
+    
+    // Cor baseada na intensidade
+    let color: string
     if (metricaSelecionada === 'abstencao') {
-      if (ratio > 0.7) return '#ef4444'
-      if (ratio > 0.4) return '#f59e0b'
-      return '#22c55e'
+      // Para abstenção: verde (baixo) -> amarelo -> vermelho (alto)
+      if (ratio > 0.7) color = '#ef4444'
+      else if (ratio > 0.4) color = '#f59e0b'
+      else color = '#22c55e'
     } else {
-      if (ratio > 0.7) return '#ef4444'
-      if (ratio > 0.4) return '#f59e0b'
-      return '#3b82f6'
+      // Para outras métricas: azul (baixo) -> verde -> amarelo -> vermelho (alto)
+      if (ratio > 0.7) color = '#ef4444'
+      else if (ratio > 0.5) color = '#f59e0b'
+      else if (ratio > 0.3) color = '#22c55e'
+      else color = '#3b82f6'
     }
+    
+    return { radius, color }
   }
 
   const metricas = [
@@ -444,18 +361,6 @@ export default function Mapas() {
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-[var(--text-secondary)]">Raio:</span>
-              <input
-                type="range"
-                min="15"
-                max="50"
-                value={raioCalor}
-                onChange={(e) => setRaioCalor(Number(e.target.value))}
-                className="w-24"
-              />
-              <span className="text-sm">{raioCalor}px</span>
-            </div>
           </div>
         </div>
       </div>
@@ -498,34 +403,35 @@ export default function Mapas() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
-            <HeatmapLayer points={heatmapPoints} options={heatmapOptions} />
-            
-            {/* Marcadores dos municípios */}
-            {filteredData.map(m => (
-              <CircleMarker
-                key={m.cd_municipio}
-                center={[m.latitude, m.longitude]}
-                radius={8}
-                pathOptions={{
-                  fillColor: getMarkerColor(m),
-                  fillOpacity: 0.8,
-                  color: '#fff',
-                  weight: 2
-                }}
-              >
-                <Popup>
-                  <div className="p-2">
-                    <h3 className="font-bold text-lg mb-2">{m.nm_municipio}</h3>
-                    <div className="space-y-1 text-sm">
-                      <p><strong>Total de Votos:</strong> {m.totalVotos.toLocaleString('pt-BR')}</p>
-                      <p><strong>Eleitores Aptos:</strong> {m.totalAptos.toLocaleString('pt-BR')}</p>
-                      <p><strong>Participação:</strong> {m.participacao.toFixed(1)}%</p>
-                      <p><strong>Abstenção:</strong> {m.abstencao.toFixed(1)}%</p>
+            {/* Marcadores dos municípios com tamanho proporcional */}
+            {filteredData.map(m => {
+              const { radius, color } = getMarkerProps(m)
+              return (
+                <CircleMarker
+                  key={m.cd_municipio}
+                  center={[m.latitude, m.longitude]}
+                  radius={radius}
+                  pathOptions={{
+                    fillColor: color,
+                    fillOpacity: 0.7,
+                    color: '#fff',
+                    weight: 2
+                  }}
+                >
+                  <Popup>
+                    <div className="p-2">
+                      <h3 className="font-bold text-lg mb-2">{m.nm_municipio}</h3>
+                      <div className="space-y-1 text-sm">
+                        <p><strong>Total de Votos:</strong> {m.totalVotos.toLocaleString('pt-BR')}</p>
+                        <p><strong>Eleitores Aptos:</strong> {m.totalAptos.toLocaleString('pt-BR')}</p>
+                        <p><strong>Participação:</strong> {m.participacao.toFixed(1)}%</p>
+                        <p><strong>Abstenção:</strong> {m.abstencao.toFixed(1)}%</p>
+                      </div>
                     </div>
-                  </div>
-                </Popup>
-              </CircleMarker>
-            ))}
+                  </Popup>
+                </CircleMarker>
+              )
+            })}
             
             <MapControls />
           </MapContainer>
@@ -586,11 +492,11 @@ export default function Mapas() {
         <div className="flex items-start gap-3">
           <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-blue-500 mb-1">Sobre o Mapa de Calor</h3>
+            <h3 className="font-semibold text-blue-500 mb-1">Sobre o Mapa</h3>
             <p className="text-sm text-[var(--text-secondary)]">
-              O mapa de calor mostra a concentração de votos e outras métricas eleitorais nos municípios de Rondônia.
-              As áreas mais quentes (vermelho) indicam maior concentração da métrica selecionada, enquanto áreas mais frias (azul/verde) indicam menor concentração.
-              Clique nos marcadores para ver detalhes de cada município.
+              O mapa mostra a concentração de votos e outras métricas eleitorais nos municípios de Rondônia.
+              O tamanho dos círculos representa a intensidade da métrica selecionada - círculos maiores indicam valores mais altos.
+              As cores variam de azul/verde (baixo) a vermelho (alto). Clique nos marcadores para ver detalhes de cada município.
             </p>
           </div>
         </div>
