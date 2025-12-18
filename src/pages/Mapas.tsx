@@ -471,7 +471,7 @@ export default function Mapas() {
             <div className="flex items-center gap-2">
               <span className="text-[var(--text-secondary)]">Legenda:</span>
               <div className="flex items-center gap-1">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: metricaSelecionada === 'abstencao' || metricaSelecionada === 'nulos' ? '#22c55e' : '#3b82f6' }}></div>
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: metricaSelecionada === 'abstencao' ? '#22c55e' : '#3b82f6' }}></div>
                 <span>Baixo</span>
               </div>
               <div className="flex items-center gap-1">
