@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Vote, AlertTriangle, Loader2, RefreshCw, Download, Filter, MapPin } from 'lucide-react'
+import { Vote, AlertTriangle, Loader2, RefreshCw, Download, Filter, MapPin, ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend
@@ -23,7 +23,7 @@ interface DadosAgregados {
   percentualNulos: number
   percentualBrancos: number
   distribuicao: { name: string; value: number; color: string }[]
-  porZona: { zona: string; nulos: number; brancos: number }[]
+  porZona: { zona: string; nulos: number; brancos: number; total: number }[]
   porMunicipio: { municipio: string; nulos: number; brancos: number }[]
   porCargo: { cargo: string; nulos: number; brancos: number }[]
 }
@@ -38,6 +38,10 @@ export default function VotosNulos() {
   const [municipios, setMunicipios] = useState<string[]>([])
   const [cargos, setCargos] = useState<string[]>([])
   const [totaisGerais, setTotaisGerais] = useState({ comparecimento: 0, abstencoes: 0 })
+  
+  // Paginação para zonas
+  const [zonasPage, setZonasPage] = useState(1)
+  const zonasPerPage = 10
 
   useEffect(() => {
     fetchData()
@@ -170,14 +174,15 @@ export default function VotosNulos() {
       { name: 'Abstenções', value: totalAbstencoes, color: '#f59e0b' },
     ]
 
+    // Todas as zonas ordenadas por total de votos inválidos
     const porZona = Object.entries(porZonaMap)
       .map(([zona, dados]) => ({
         zona: `Zona ${zona}`,
         nulos: dados.nulos,
-        brancos: dados.brancos
+        brancos: dados.brancos,
+        total: dados.nulos + dados.brancos
       }))
-      .sort((a, b) => (b.nulos + b.brancos) - (a.nulos + a.brancos))
-      .slice(0, 15)
+      .sort((a, b) => b.total - a.total)
 
     const porMunicipio = Object.entries(porMunicipioMap)
       .map(([municipio, dados]) => ({
@@ -210,6 +215,18 @@ export default function VotosNulos() {
       porCargo
     }
   }, [votosData, filtroCargo, filtroMunicipio, totaisGerais])
+
+  // Paginação das zonas
+  const totalZonasPages = Math.ceil(dadosAgregados.porZona.length / zonasPerPage)
+  const zonasPaginadas = dadosAgregados.porZona.slice(
+    (zonasPage - 1) * zonasPerPage,
+    zonasPage * zonasPerPage
+  )
+
+  // Reset página quando filtros mudam
+  useEffect(() => {
+    setZonasPage(1)
+  }, [filtroCargo, filtroMunicipio, filtroAno, filtroTurno])
 
   const exportToCSV = () => {
     const headers = ['Município', 'Zona', 'Cargo', 'Tipo', 'Votos']
@@ -406,31 +423,6 @@ export default function VotosNulos() {
               </div>
             </div>
 
-            {/* Nulos e Brancos por Zona */}
-            <div className="card p-6">
-              <h2 className="text-lg font-semibold mb-4">Top 15 Zonas com Mais Votos Inválidos</h2>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dadosAgregados.porZona}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                    <XAxis dataKey="zona" stroke="var(--text-secondary)" angle={-45} textAnchor="end" height={60} />
-                    <YAxis stroke="var(--text-secondary)" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'var(--bg-card)', 
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '8px'
-                      }}
-                      formatter={(value: number) => [value.toLocaleString('pt-BR'), '']}
-                    />
-                    <Legend />
-                    <Bar dataKey="nulos" fill="#ef4444" name="Nulos" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="brancos" fill="#94a3b8" name="Brancos" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
             {/* Por Cargo */}
             <div className="card p-6">
               <h2 className="text-lg font-semibold mb-4">Votos Inválidos por Cargo</h2>
@@ -455,34 +447,147 @@ export default function VotosNulos() {
                 </ResponsiveContainer>
               </div>
             </div>
+          </div>
 
-            {/* Top 10 Municípios */}
-            <div className="card p-6">
-              <h2 className="text-lg font-semibold mb-4">Top 10 Municípios com Mais Votos Inválidos</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[var(--border-color)]">
-                      <th className="text-left py-2 px-3">#</th>
-                      <th className="text-left py-2 px-3">Município</th>
-                      <th className="text-right py-2 px-3">Nulos</th>
-                      <th className="text-right py-2 px-3">Brancos</th>
-                      <th className="text-right py-2 px-3">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dadosAgregados.porMunicipio.map((m, index) => (
-                      <tr key={m.municipio} className={index % 2 === 0 ? 'bg-[var(--bg-secondary)]' : ''}>
-                        <td className="py-2 px-3 text-[var(--text-secondary)]">{index + 1}</td>
-                        <td className="py-2 px-3 font-medium">{m.municipio}</td>
-                        <td className="py-2 px-3 text-right text-red-500">{m.nulos.toLocaleString('pt-BR')}</td>
-                        <td className="py-2 px-3 text-right text-slate-500">{m.brancos.toLocaleString('pt-BR')}</td>
-                        <td className="py-2 px-3 text-right font-semibold">{(m.nulos + m.brancos).toLocaleString('pt-BR')}</td>
+          {/* Detalhamento por Zona - COM PAGINAÇÃO */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Detalhamento por Zona</h2>
+              <span className="text-sm text-[var(--text-secondary)]">
+                Total: {dadosAgregados.porZona.length} zonas
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th className="text-left py-3 px-4">#</th>
+                    <th className="text-left py-3 px-4">Zona</th>
+                    <th className="text-right py-3 px-4">Votos Nulos</th>
+                    <th className="text-right py-3 px-4">Votos Brancos</th>
+                    <th className="text-right py-3 px-4">Total Inválidos</th>
+                    <th className="text-right py-3 px-4">% do Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {zonasPaginadas.map((z, index) => {
+                    const globalIndex = (zonasPage - 1) * zonasPerPage + index
+                    const percentual = dadosAgregados.totalNulos + dadosAgregados.totalBrancos > 0
+                      ? (z.total / (dadosAgregados.totalNulos + dadosAgregados.totalBrancos)) * 100
+                      : 0
+                    return (
+                      <tr 
+                        key={z.zona} 
+                        className={`border-b border-[var(--border-color)]/50 hover:bg-[var(--bg-secondary)]/50 transition-colors ${globalIndex % 2 === 0 ? 'bg-[var(--bg-secondary)]/30' : ''}`}
+                      >
+                        <td className="py-3 px-4 text-[var(--text-muted)]">{globalIndex + 1}</td>
+                        <td className="py-3 px-4 font-medium">{z.zona}</td>
+                        <td className="py-3 px-4 text-right text-red-500 font-medium">{z.nulos.toLocaleString('pt-BR')}</td>
+                        <td className="py-3 px-4 text-right text-slate-400">{z.brancos.toLocaleString('pt-BR')}</td>
+                        <td className="py-3 px-4 text-right font-bold">{z.total.toLocaleString('pt-BR')}</td>
+                        <td className="py-3 px-4 text-right">
+                          <span className="px-2 py-1 rounded bg-[var(--bg-tertiary)] text-sm">
+                            {percentual.toFixed(2)}%
+                          </span>
+                        </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Controles de Paginação */}
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border-color)]">
+              <p className="text-sm text-[var(--text-secondary)]">
+                Mostrando {((zonasPage - 1) * zonasPerPage) + 1} a {Math.min(zonasPage * zonasPerPage, dadosAgregados.porZona.length)} de {dadosAgregados.porZona.length} zonas
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setZonasPage(1)}
+                  disabled={zonasPage === 1}
+                  className="px-3 py-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  Primeira
+                </button>
+                <button
+                  onClick={() => setZonasPage(p => Math.max(1, p - 1))}
+                  disabled={zonasPage === 1}
+                  className="p-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalZonasPages) }, (_, i) => {
+                    let pageNum
+                    if (totalZonasPages <= 5) {
+                      pageNum = i + 1
+                    } else if (zonasPage <= 3) {
+                      pageNum = i + 1
+                    } else if (zonasPage >= totalZonasPages - 2) {
+                      pageNum = totalZonasPages - 4 + i
+                    } else {
+                      pageNum = zonasPage - 2 + i
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setZonasPage(pageNum)}
+                        className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
+                          zonasPage === pageNum 
+                            ? 'bg-[var(--accent-color)] text-white' 
+                            : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                </div>
+                <button
+                  onClick={() => setZonasPage(p => Math.min(totalZonasPages, p + 1))}
+                  disabled={zonasPage === totalZonasPages}
+                  className="p-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setZonasPage(totalZonasPages)}
+                  disabled={zonasPage === totalZonasPages}
+                  className="px-3 py-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  Última
+                </button>
               </div>
+            </div>
+          </div>
+
+          {/* Top 10 Municípios */}
+          <div className="card p-6">
+            <h2 className="text-lg font-semibold mb-4">Top 10 Municípios com Mais Votos Inválidos</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th className="text-left py-2 px-3">#</th>
+                    <th className="text-left py-2 px-3">Município</th>
+                    <th className="text-right py-2 px-3">Nulos</th>
+                    <th className="text-right py-2 px-3">Brancos</th>
+                    <th className="text-right py-2 px-3">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dadosAgregados.porMunicipio.map((m, index) => (
+                    <tr key={m.municipio} className={index % 2 === 0 ? 'bg-[var(--bg-secondary)]' : ''}>
+                      <td className="py-2 px-3 text-[var(--text-secondary)]">{index + 1}</td>
+                      <td className="py-2 px-3 font-medium">{m.municipio}</td>
+                      <td className="py-2 px-3 text-right text-red-500">{m.nulos.toLocaleString('pt-BR')}</td>
+                      <td className="py-2 px-3 text-right text-slate-500">{m.brancos.toLocaleString('pt-BR')}</td>
+                      <td className="py-2 px-3 text-right font-semibold">{(m.nulos + m.brancos).toLocaleString('pt-BR')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </>
