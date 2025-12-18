@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { BarChart3, TrendingUp, RefreshCw, Filter, Download } from 'lucide-react'
+import { BarChart3, TrendingUp, RefreshCw, Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts'
 import { supabase } from '../lib/supabase'
 
@@ -57,7 +57,10 @@ export default function Resultados() {
   const [error, setError] = useState<string | null>(null)
   const [filtroAno, setFiltroAno] = useState(2024)
   const [filtroTurno, setFiltroTurno] = useState(1)
-  const [mostrarTodos, setMostrarTodos] = useState(false)
+  
+  // Paginação
+  const [page, setPage] = useState(1)
+  const itemsPerPage = 15
 
   const fetchResultados = async () => {
     setLoading(true)
@@ -83,6 +86,7 @@ export default function Resultados() {
       )
 
       setResultados(candidatosValidos)
+      setPage(1) // Reset página ao mudar filtros
     } catch (err) {
       console.error('Erro:', err)
       setError('Erro ao carregar dados')
@@ -97,19 +101,13 @@ export default function Resultados() {
 
   const totalVotos = resultados.reduce((acc, r) => acc + r.total_votos, 0)
   const top10 = resultados.slice(0, 10)
-  const displayResults = mostrarTodos ? resultados : resultados.slice(0, 20)
-
-  // Dados para o gráfico de pizza (top 5 + outros)
-  const top5 = resultados.slice(0, 5)
-  const outrosVotos = resultados.slice(5).reduce((acc, r) => acc + r.total_votos, 0)
-  const pieData = [
-    ...top5.map(r => ({
-      name: r.nm_votavel,
-      value: r.total_votos,
-      color: getCorPartido(r.nm_partido)
-    })),
-    ...(outrosVotos > 0 ? [{ name: 'Outros', value: outrosVotos, color: '#9CA3AF' }] : [])
-  ]
+  
+  // Paginação
+  const totalPages = Math.ceil(resultados.length / itemsPerPage)
+  const resultadosPaginados = resultados.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  )
 
   const exportarCSV = () => {
     const headers = ['Posição', 'Candidato', 'Partido', 'Votos', 'Percentual']
@@ -291,16 +289,13 @@ export default function Resultados() {
             </div>
           </div>
 
-          {/* Tabela completa */}
+          {/* Tabela completa COM PAGINAÇÃO */}
           <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Tabela Completa de Resultados</h2>
-              <button
-                onClick={() => setMostrarTodos(!mostrarTodos)}
-                className="text-sm text-emerald-500 hover:underline"
-              >
-                {mostrarTodos ? 'Mostrar menos' : `Ver todos (${resultados.length})`}
-              </button>
+              <span className="text-sm text-[var(--text-secondary)]">
+                Total: {resultados.length} candidatos
+              </span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -314,31 +309,100 @@ export default function Resultados() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayResults.map((r, i) => (
-                    <tr key={i} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-secondary)]">
-                      <td className="py-2 px-2 font-medium">{i + 1}</td>
-                      <td className="py-2 px-2">
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: getCorPartido(r.nm_partido) }}
-                          />
-                          {r.nm_votavel}
-                        </div>
-                      </td>
-                      <td className="py-2 px-2 text-[var(--text-secondary)]">{r.nm_partido || '-'}</td>
-                      <td className="py-2 px-2 text-right font-mono">{r.total_votos.toLocaleString('pt-BR')}</td>
-                      <td className="py-2 px-2 text-right font-semibold">{r.percentual}%</td>
-                    </tr>
-                  ))}
+                  {resultadosPaginados.map((r, index) => {
+                    const globalIndex = (page - 1) * itemsPerPage + index
+                    return (
+                      <tr 
+                        key={globalIndex} 
+                        className={`border-b border-[var(--border-color)]/50 hover:bg-[var(--bg-secondary)]/50 transition-colors ${globalIndex % 2 === 0 ? 'bg-[var(--bg-secondary)]/30' : ''}`}
+                      >
+                        <td className="py-2 px-2 font-medium text-[var(--text-muted)]">{globalIndex + 1}</td>
+                        <td className="py-2 px-2">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full flex-shrink-0" 
+                              style={{ backgroundColor: getCorPartido(r.nm_partido) }}
+                            />
+                            <span className="font-medium">{r.nm_votavel}</span>
+                          </div>
+                        </td>
+                        <td className="py-2 px-2 text-[var(--text-secondary)]">{r.nm_partido || '-'}</td>
+                        <td className="py-2 px-2 text-right font-mono font-bold">{r.total_votos.toLocaleString('pt-BR')}</td>
+                        <td className="py-2 px-2 text-right">
+                          <span className="px-2 py-0.5 rounded bg-[var(--bg-tertiary)] text-sm font-semibold">
+                            {r.percentual}%
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
-            {!mostrarTodos && resultados.length > 20 && (
-              <p className="text-center text-sm text-[var(--text-muted)] mt-4">
-                Mostrando 20 de {resultados.length} candidatos
+            
+            {/* Controles de Paginação */}
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border-color)]">
+              <p className="text-sm text-[var(--text-secondary)]">
+                Mostrando {((page - 1) * itemsPerPage) + 1} a {Math.min(page * itemsPerPage, resultados.length)} de {resultados.length} candidatos
               </p>
-            )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(1)}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors text-sm"
+                >
+                  Primeira
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (page <= 3) {
+                      pageNum = i + 1
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = page - 2 + i
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
+                          page === pageNum 
+                            ? 'bg-emerald-600 text-white' 
+                            : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                </div>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="p-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setPage(totalPages)}
+                  disabled={page === totalPages}
+                  className="px-3 py-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors text-sm"
+                >
+                  Última
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Fonte dos dados */}

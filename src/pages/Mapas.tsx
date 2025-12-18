@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import Layout from '@/components/Layout'
 import {
@@ -13,7 +13,9 @@ import {
   Download,
   Layers,
   Info,
-  BarChart3
+  BarChart3,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 interface MunicipioData {
@@ -39,6 +41,10 @@ export default function Mapas() {
   const [listaMunicipios, setListaMunicipios] = useState<string[]>([])
   const [totalVotosGeral, setTotalVotosGeral] = useState(0)
   const [totalEleitores, setTotalEleitores] = useState(0)
+  
+  // Paginação
+  const [page, setPage] = useState(1)
+  const itemsPerPage = 15
 
   useEffect(() => {
     fetchData()
@@ -110,6 +116,18 @@ export default function Mapas() {
     if (filtroMunicipio === 'todos') return municipios
     return municipios.filter(m => m.nm_municipio?.toUpperCase() === filtroMunicipio)
   }, [municipios, filtroMunicipio])
+
+  // Reset página quando filtros mudam
+  useEffect(() => {
+    setPage(1)
+  }, [filtroMunicipio, filtroAno, filtroTurno])
+
+  // Paginação
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+  const dadosPaginados = filteredData.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  )
 
   // Calcular cor da barra baseada na métrica
   const getBarColor = (m: MunicipioData) => {
@@ -360,25 +378,86 @@ export default function Mapas() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredData.slice(0, 20).map((m, index) => (
-                      <tr key={m.cd_municipio} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-secondary)]">
-                        <td className="py-3 px-4 text-[var(--text-secondary)]">{index + 1}</td>
-                        <td className="py-3 px-4 font-medium">{m.nm_municipio}</td>
-                        <td className="py-3 px-4 text-right">{m.total_votos.toLocaleString('pt-BR')}</td>
-                        <td className="py-3 px-4 text-right">{m.total_aptos.toLocaleString('pt-BR')}</td>
-                        <td className="py-3 px-4 text-right text-green-500">{m.participacao.toFixed(1)}%</td>
-                        <td className="py-3 px-4 text-right text-red-500">{m.abstencao.toFixed(1)}%</td>
-                      </tr>
-                    ))}
+                    {dadosPaginados.map((m, index) => {
+                      const globalIndex = (page - 1) * itemsPerPage + index
+                      return (
+                        <tr key={m.cd_municipio} className={`border-b border-[var(--border-color)]/50 hover:bg-[var(--bg-secondary)]/50 transition-colors ${globalIndex % 2 === 0 ? 'bg-[var(--bg-secondary)]/30' : ''}`}>
+                          <td className="py-3 px-4 text-[var(--text-muted)]">{globalIndex + 1}</td>
+                          <td className="py-3 px-4 font-medium">{m.nm_municipio}</td>
+                          <td className="py-3 px-4 text-right font-mono">{m.total_votos.toLocaleString('pt-BR')}</td>
+                          <td className="py-3 px-4 text-right font-mono">{m.total_aptos.toLocaleString('pt-BR')}</td>
+                          <td className="py-3 px-4 text-right"><span className="text-green-500 font-medium">{m.participacao.toFixed(1)}%</span></td>
+                          <td className="py-3 px-4 text-right"><span className="text-red-500 font-medium">{m.abstencao.toFixed(1)}%</span></td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
               
-              {filteredData.length > 20 && (
-                <p className="text-center text-[var(--text-secondary)] mt-4">
-                  Mostrando 20 de {filteredData.length} municípios
+              {/* Controles de Paginação */}
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border-color)]">
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Mostrando {((page - 1) * itemsPerPage) + 1} a {Math.min(page * itemsPerPage, filteredData.length)} de {filteredData.length} municípios
                 </p>
-              )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage(1)}
+                    disabled={page === 1}
+                    className="px-3 py-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors text-sm"
+                  >
+                    Primeira
+                  </button>
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="p-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum
+                      if (totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (page <= 3) {
+                        pageNum = i + 1
+                      } else if (page >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i
+                      } else {
+                        pageNum = page - 2 + i
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setPage(pageNum)}
+                          className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
+                            page === pageNum 
+                              ? 'bg-blue-600 text-white' 
+                              : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="p-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setPage(totalPages)}
+                    disabled={page === totalPages}
+                    className="px-3 py-1.5 rounded bg-[var(--bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors text-sm"
+                  >
+                    Última
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Info */}
