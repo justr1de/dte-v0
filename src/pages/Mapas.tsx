@@ -11,13 +11,9 @@ import {
   TrendingUp,
   Download,
   Layers,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Info
+  Info,
+  BarChart3
 } from 'lucide-react'
-import { MapContainer, TileLayer, useMap, CircleMarker, Popup } from 'react-leaflet'
-import 'leaflet/dist/leaflet.css'
 
 interface MunicipioData {
   cd_municipio: number
@@ -26,97 +22,9 @@ interface MunicipioData {
   totalAptos: number
   participacao: number
   abstencao: number
-  latitude: number
-  longitude: number
-}
-
-// Coordenadas dos municípios de Rondônia
-const MUNICIPIOS_COORDS: Record<string, { lat: number, lng: number }> = {
-  'PORTO VELHO': { lat: -8.7612, lng: -63.9004 },
-  'JI-PARANÁ': { lat: -10.8853, lng: -61.9517 },
-  'ARIQUEMES': { lat: -9.9082, lng: -63.0408 },
-  'VILHENA': { lat: -12.7406, lng: -60.1458 },
-  'CACOAL': { lat: -11.4386, lng: -61.4472 },
-  'ROLIM DE MOURA': { lat: -11.7279, lng: -61.7714 },
-  'GUAJARÁ-MIRIM': { lat: -10.7833, lng: -65.3500 },
-  'JARU': { lat: -10.4389, lng: -62.4664 },
-  'OURO PRETO DO OESTE': { lat: -10.7250, lng: -62.2500 },
-  'PIMENTA BUENO': { lat: -11.6725, lng: -61.1936 },
-  'BURITIS': { lat: -10.2125, lng: -63.8292 },
-  'MACHADINHO D\'OESTE': { lat: -9.4428, lng: -61.9814 },
-  'COLORADO DO OESTE': { lat: -13.1175, lng: -60.5444 },
-  'ESPIGÃO D\'OESTE': { lat: -11.5267, lng: -61.0147 },
-  'NOVA MAMORÉ': { lat: -10.4078, lng: -65.3339 },
-  'SÃO MIGUEL DO GUAPORÉ': { lat: -11.6917, lng: -62.7167 },
-  'ALTA FLORESTA D\'OESTE': { lat: -11.9356, lng: -61.9997 },
-  'PRESIDENTE MÉDICI': { lat: -11.1750, lng: -61.9000 },
-  'CEREJEIRAS': { lat: -13.1944, lng: -60.8167 },
-  'COSTA MARQUES': { lat: -12.4389, lng: -64.2278 },
-  'CANDEIAS DO JAMARI': { lat: -8.7833, lng: -63.7000 },
-  'NOVA BRASILÂNDIA D\'OESTE': { lat: -11.7250, lng: -62.3167 },
-  'ALVORADA D\'OESTE': { lat: -11.3500, lng: -62.2833 },
-  'SÃO FRANCISCO DO GUAPORÉ': { lat: -12.0500, lng: -63.5667 },
-  'SERINGUEIRAS': { lat: -11.8000, lng: -63.0333 },
-  'MIRANTE DA SERRA': { lat: -11.0333, lng: -62.6667 },
-  'MONTE NEGRO': { lat: -10.2500, lng: -63.3000 },
-  'CUJUBIM': { lat: -9.3667, lng: -62.5833 },
-  'ITAPUÃ DO OESTE': { lat: -9.1833, lng: -63.1500 },
-  'RIO CRESPO': { lat: -9.7000, lng: -62.9000 },
-  'THEOBROMA': { lat: -10.2500, lng: -62.3500 },
-  'URUPÁ': { lat: -11.1333, lng: -62.3667 },
-  'GOVERNADOR JORGE TEIXEIRA': { lat: -10.6167, lng: -62.7500 },
-  'VALE DO ANARI': { lat: -9.8667, lng: -62.1833 },
-  'ALTO PARAÍSO': { lat: -9.7167, lng: -63.3167 },
-  'CACAULÂNDIA': { lat: -10.3333, lng: -62.9000 },
-  'CAMPO NOVO DE RONDÔNIA': { lat: -10.5667, lng: -63.6167 },
-  'CASTANHEIRAS': { lat: -11.4333, lng: -61.9500 },
-  'CHUPINGUAIA': { lat: -12.5667, lng: -60.9000 },
-  'CORUMBIARA': { lat: -12.9833, lng: -60.9167 },
-  'MINISTRO ANDREAZZA': { lat: -11.2000, lng: -61.5167 },
-  'NOVO HORIZONTE DO OESTE': { lat: -11.7167, lng: -62.0000 },
-  'PARECIS': { lat: -12.1667, lng: -61.6000 },
-  'PIMENTEIRAS DO OESTE': { lat: -13.4833, lng: -61.0500 },
-  'PRIMAVERA DE RONDÔNIA': { lat: -11.8333, lng: -61.3167 },
-  'SANTA LUZIA D\'OESTE': { lat: -11.9000, lng: -61.7833 },
-  'SÃO FELIPE D\'OESTE': { lat: -11.9000, lng: -61.5000 },
-  'TEIXEIRÓPOLIS': { lat: -10.9167, lng: -62.2500 },
-  'VALE DO PARAÍSO': { lat: -10.4500, lng: -62.1333 },
-  'ALTO ALEGRE DOS PARECIS': { lat: -12.1333, lng: -61.8500 },
-  'NOVA UNIÃO': { lat: -10.9000, lng: -62.5500 },
 }
 
 type MetricType = 'votos' | 'participacao' | 'abstencao' | 'densidade'
-
-// Componente para controlar o mapa
-function MapControls() {
-  const map = useMap()
-  
-  return (
-    <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
-      <button
-        onClick={() => map.zoomIn()}
-        className="p-2 bg-white rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
-        title="Zoom In"
-      >
-        <ZoomIn className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-      </button>
-      <button
-        onClick={() => map.zoomOut()}
-        className="p-2 bg-white rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
-        title="Zoom Out"
-      >
-        <ZoomOut className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-      </button>
-      <button
-        onClick={() => map.setView([-10.8, -62.8], 7)}
-        className="p-2 bg-white rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
-        title="Resetar Visualização"
-      >
-        <Maximize2 className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-      </button>
-    </div>
-  )
-}
 
 export default function Mapas() {
   const [loading, setLoading] = useState(true)
@@ -155,8 +63,6 @@ export default function Mapas() {
           const secaoKey = `${b.cd_municipio}-${b.nr_zona}-${b.nr_secao}`
           municipioSet.add(nmMunicipio)
           
-          const baseCoords = MUNICIPIOS_COORDS[nmMunicipio] || { lat: -10.8, lng: -62.8 }
-          
           if (!municipioMap[nmMunicipio]) {
             municipioMap[nmMunicipio] = {
               cd_municipio: b.cd_municipio,
@@ -164,9 +70,7 @@ export default function Mapas() {
               totalVotos: 0,
               totalAptos: 0,
               participacao: 0,
-              abstencao: 0,
-              latitude: baseCoords.lat,
-              longitude: baseCoords.lng
+              abstencao: 0
             }
           }
           
@@ -218,31 +122,28 @@ export default function Mapas() {
     return municipios.filter(m => m.nm_municipio?.toUpperCase() === filtroMunicipio)
   }, [municipios, filtroMunicipio])
 
-  // Calcular tamanho e cor do marcador baseado na métrica
-  const getMarkerProps = (m: MunicipioData) => {
+  // Calcular cor da barra baseada na métrica
+  const getBarColor = (m: MunicipioData) => {
     const maxValue = Math.max(...municipios.map(mun => getMetricValue(mun)), 1)
     const value = getMetricValue(m)
     const ratio = value / maxValue
     
-    // Tamanho do marcador baseado na métrica (entre 8 e 30)
-    const radius = 8 + (ratio * 22)
-    
-    // Cor baseada na intensidade
-    let color: string
     if (metricaSelecionada === 'abstencao') {
-      // Para abstenção: verde (baixo) -> amarelo -> vermelho (alto)
-      if (ratio > 0.7) color = '#ef4444'
-      else if (ratio > 0.4) color = '#f59e0b'
-      else color = '#22c55e'
+      if (ratio > 0.7) return 'bg-red-500'
+      if (ratio > 0.4) return 'bg-yellow-500'
+      return 'bg-green-500'
     } else {
-      // Para outras métricas: azul (baixo) -> verde -> amarelo -> vermelho (alto)
-      if (ratio > 0.7) color = '#ef4444'
-      else if (ratio > 0.5) color = '#f59e0b'
-      else if (ratio > 0.3) color = '#22c55e'
-      else color = '#3b82f6'
+      if (ratio > 0.7) return 'bg-red-500'
+      if (ratio > 0.5) return 'bg-yellow-500'
+      if (ratio > 0.3) return 'bg-green-500'
+      return 'bg-blue-500'
     }
-    
-    return { radius, color }
+  }
+
+  const getBarWidth = (m: MunicipioData) => {
+    const maxValue = Math.max(...municipios.map(mun => getMetricValue(mun)), 1)
+    const value = getMetricValue(m)
+    return `${(value / maxValue) * 100}%`
   }
 
   const metricas = [
@@ -365,19 +266,23 @@ export default function Mapas() {
         </div>
       </div>
 
-      {/* Mapa */}
+      {/* Visualização de Calor - Barras */}
       <div className="card p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-[var(--accent-color)]" />
+            <BarChart3 className="w-5 h-5 text-[var(--accent-color)]" />
             <h2 className="text-lg font-semibold">Mapa de Calor - {metricas.find(m => m.key === metricaSelecionada)?.label}</h2>
           </div>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-[var(--text-secondary)]">Legenda:</span>
               <div className="flex items-center gap-1">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: metricaSelecionada === 'abstencao' ? '#22c55e' : '#3b82f6' }}></div>
+                <div className="w-4 h-4 rounded bg-blue-500"></div>
                 <span>Baixo</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 rounded bg-green-500"></div>
+                <span>Médio-Baixo</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 rounded bg-yellow-500"></div>
@@ -391,50 +296,25 @@ export default function Mapas() {
           </div>
         </div>
 
-        <div className="h-[600px] rounded-xl overflow-hidden border border-[var(--border-color)]">
-          <MapContainer
-            center={[-10.8, -62.8]}
-            zoom={7}
-            style={{ height: '100%', width: '100%' }}
-            scrollWheelZoom={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
-            {/* Marcadores dos municípios com tamanho proporcional */}
-            {filteredData.map(m => {
-              const { radius, color } = getMarkerProps(m)
-              return (
-                <CircleMarker
-                  key={m.cd_municipio}
-                  center={[m.latitude, m.longitude]}
-                  radius={radius}
-                  pathOptions={{
-                    fillColor: color,
-                    fillOpacity: 0.7,
-                    color: '#fff',
-                    weight: 2
-                  }}
-                >
-                  <Popup>
-                    <div className="p-2">
-                      <h3 className="font-bold text-lg mb-2">{m.nm_municipio}</h3>
-                      <div className="space-y-1 text-sm">
-                        <p><strong>Total de Votos:</strong> {m.totalVotos.toLocaleString('pt-BR')}</p>
-                        <p><strong>Eleitores Aptos:</strong> {m.totalAptos.toLocaleString('pt-BR')}</p>
-                        <p><strong>Participação:</strong> {m.participacao.toFixed(1)}%</p>
-                        <p><strong>Abstenção:</strong> {m.abstencao.toFixed(1)}%</p>
-                      </div>
-                    </div>
-                  </Popup>
-                </CircleMarker>
-              )
-            })}
-            
-            <MapControls />
-          </MapContainer>
+        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+          {filteredData.map((m, index) => (
+            <div key={m.cd_municipio} className="flex items-center gap-3 p-2 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors">
+              <span className="w-8 text-center text-[var(--text-secondary)] font-medium">{index + 1}</span>
+              <span className="w-48 font-medium truncate">{m.nm_municipio}</span>
+              <div className="flex-1 h-8 bg-[var(--bg-secondary)] rounded-lg overflow-hidden relative">
+                <div 
+                  className={`h-full ${getBarColor(m)} transition-all duration-500 rounded-lg`}
+                  style={{ width: getBarWidth(m) }}
+                />
+                <span className="absolute inset-0 flex items-center justify-center text-sm font-medium">
+                  {metricaSelecionada === 'votos' || metricaSelecionada === 'densidade' 
+                    ? getMetricValue(m).toLocaleString('pt-BR')
+                    : `${getMetricValue(m).toFixed(1)}%`
+                  }
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -492,11 +372,11 @@ export default function Mapas() {
         <div className="flex items-start gap-3">
           <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-blue-500 mb-1">Sobre o Mapa</h3>
+            <h3 className="font-semibold text-blue-500 mb-1">Sobre a Visualização</h3>
             <p className="text-sm text-[var(--text-secondary)]">
-              O mapa mostra a concentração de votos e outras métricas eleitorais nos municípios de Rondônia.
-              O tamanho dos círculos representa a intensidade da métrica selecionada - círculos maiores indicam valores mais altos.
-              As cores variam de azul/verde (baixo) a vermelho (alto). Clique nos marcadores para ver detalhes de cada município.
+              O gráfico de barras mostra a concentração de votos e outras métricas eleitorais nos municípios de Rondônia.
+              O tamanho das barras representa a intensidade da métrica selecionada - barras maiores indicam valores mais altos.
+              As cores variam de azul (baixo) a vermelho (alto), indicando a intensidade relativa de cada município.
             </p>
           </div>
         </div>
