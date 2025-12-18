@@ -67,3 +67,53 @@ export interface Campanha {
   meta_votos?: number
   created_at: string
 }
+
+// Funções para chamar Edge Functions
+export async function createUserViaEdgeFunction(data: {
+  email: string
+  password: string
+  name: string
+  role: string
+}) {
+  const { data: session } = await supabase.auth.getSession()
+  
+  const response = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.session?.access_token}`,
+      'apikey': supabaseAnonKey
+    },
+    body: JSON.stringify(data)
+  })
+
+  const result = await response.json()
+  
+  if (!response.ok) {
+    throw new Error(result.error || 'Erro ao criar usuário')
+  }
+  
+  return result
+}
+
+export async function deleteUserViaEdgeFunction(userId: string, openId: string) {
+  const { data: session } = await supabase.auth.getSession()
+  
+  const response = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.session?.access_token}`,
+      'apikey': supabaseAnonKey
+    },
+    body: JSON.stringify({ userId, openId })
+  })
+
+  const result = await response.json()
+  
+  if (!response.ok) {
+    throw new Error(result.error || 'Erro ao deletar usuário')
+  }
+  
+  return result
+}

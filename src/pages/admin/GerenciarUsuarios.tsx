@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Layout from '@/components/Layout'
-import { supabase } from '@/lib/supabase'
+import { supabase, createUserViaEdgeFunction, deleteUserViaEdgeFunction } from '@/lib/supabase'
 import { 
   UserPlus, 
   Search, 
@@ -72,31 +72,13 @@ export default function GerenciarUsuarios() {
     e.preventDefault()
     
     try {
-      // Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Criar usuário via Edge Function (usa service_role key no servidor)
+      await createUserViaEdgeFunction({
         email: formData.email,
         password: formData.password,
-        email_confirm: true,
-        user_metadata: {
-          name: formData.name,
-          role: formData.role
-        }
+        name: formData.name,
+        role: formData.role
       })
-
-      if (authError) throw authError
-
-      // Inserir na tabela users
-      const { error: dbError } = await supabase
-        .from('users')
-        .insert({
-          open_id: authData.user.id,
-          name: formData.name,
-          email: formData.email,
-          role: formData.role,
-          is_active: true
-        })
-
-      if (dbError) throw dbError
 
       toast.success('Usuário criado com sucesso!')
       setShowModal(false)
@@ -133,17 +115,8 @@ export default function GerenciarUsuarios() {
     if (!confirm(`Tem certeza que deseja excluir o usuário ${user.name}?`)) return
 
     try {
-      // Deletar do Auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(user.open_id)
-      if (authError) console.error('Erro ao deletar do Auth:', authError)
-
-      // Deletar da tabela
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', user.id)
-
-      if (error) throw error
+      // Deletar via Edge Function (usa service_role key no servidor)
+      await deleteUserViaEdgeFunction(user.id, user.open_id)
 
       toast.success('Usuário excluído com sucesso!')
       fetchUsuarios()
