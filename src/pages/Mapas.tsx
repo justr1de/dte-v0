@@ -41,9 +41,6 @@ interface MunicipioData {
   nm_municipio: string
   totalVotos: number
   totalAptos: number
-  votosValidos: number
-  votosNulos: number
-  votosBrancos: number
   participacao: number
   abstencao: number
   latitude: number
@@ -105,7 +102,7 @@ const MUNICIPIOS_COORDS: Record<string, { lat: number, lng: number }> = {
   'NOVA UNIÃO': { lat: -10.9000, lng: -62.5500 },
 }
 
-type MetricType = 'votos' | 'participacao' | 'abstencao' | 'nulos' | 'brancos'
+type MetricType = 'votos' | 'participacao' | 'abstencao' | 'densidade'
 
 // Componente para controlar o mapa
 function MapControls() {
@@ -195,7 +192,7 @@ export default function Mapas() {
     try {
       const { data: boletins, error } = await supabase
         .from('boletins_urna')
-        .select('cd_municipio, nm_municipio, nr_zona, nr_secao, qt_votos, qt_aptos, qt_comparecimento, qt_abstencoes, qt_votos_nominais, qt_votos_brancos, qt_votos_nulos')
+        .select('cd_municipio, nm_municipio, nr_zona, nr_secao, qt_votos, qt_aptos, qt_comparecimento, qt_abstencoes')
         .eq('ano_eleicao', filtroAno)
         .eq('nr_turno', filtroTurno)
         .limit(100000)
@@ -220,9 +217,6 @@ export default function Mapas() {
               nm_municipio: b.nm_municipio,
               totalVotos: 0,
               totalAptos: 0,
-              votosValidos: 0,
-              votosNulos: 0,
-              votosBrancos: 0,
               participacao: 0,
               abstencao: 0,
               latitude: baseCoords.lat,
@@ -231,9 +225,6 @@ export default function Mapas() {
           }
           
           municipioMap[nmMunicipio].totalVotos += b.qt_votos || 0
-          municipioMap[nmMunicipio].votosValidos += b.qt_votos_nominais || 0
-          municipioMap[nmMunicipio].votosNulos += b.qt_votos_nulos || 0
-          municipioMap[nmMunicipio].votosBrancos += b.qt_votos_brancos || 0
 
           // Contar aptos e abstenções apenas uma vez por seção
           if (!secoesProcessadas.has(secaoKey)) {
@@ -271,8 +262,7 @@ export default function Mapas() {
       case 'votos': return m.totalVotos
       case 'participacao': return m.participacao
       case 'abstencao': return m.abstencao
-      case 'nulos': return m.votosNulos
-      case 'brancos': return m.votosBrancos
+      case 'densidade': return m.totalAptos
       default: return m.totalVotos
     }
   }
@@ -309,7 +299,7 @@ export default function Mapas() {
   }, [filteredData, metricaSelecionada])
 
   const heatmapOptions = useMemo(() => {
-    const gradient = metricaSelecionada === 'abstencao' || metricaSelecionada === 'nulos'
+    const gradient = metricaSelecionada === 'abstencao'
       ? { 0.2: '#22c55e', 0.4: '#84cc16', 0.6: '#f59e0b', 0.8: '#f97316', 1: '#ef4444' }
       : { 0.2: '#3b82f6', 0.4: '#06b6d4', 0.6: '#22c55e', 0.8: '#f59e0b', 1: '#ef4444' }
     
@@ -327,7 +317,7 @@ export default function Mapas() {
     const value = getMetricValue(m)
     const ratio = value / maxValue
     
-    if (metricaSelecionada === 'abstencao' || metricaSelecionada === 'nulos') {
+    if (metricaSelecionada === 'abstencao') {
       if (ratio > 0.7) return '#ef4444'
       if (ratio > 0.4) return '#f59e0b'
       return '#22c55e'
@@ -342,8 +332,7 @@ export default function Mapas() {
     { key: 'votos' as MetricType, label: 'Total de Votos', icon: Vote, description: 'Quantidade total de votos apurados' },
     { key: 'participacao' as MetricType, label: 'Participação (%)', icon: TrendingUp, description: 'Percentual de comparecimento' },
     { key: 'abstencao' as MetricType, label: 'Abstenção (%)', icon: Users, description: 'Percentual de abstenção' },
-    { key: 'nulos' as MetricType, label: 'Votos Nulos', icon: Filter, description: 'Quantidade de votos nulos' },
-    { key: 'brancos' as MetricType, label: 'Votos Brancos', icon: Layers, description: 'Quantidade de votos em branco' },
+    { key: 'densidade' as MetricType, label: 'Eleitores Aptos', icon: MapPin, description: 'Total de eleitores aptos a votar' },
   ]
 
   if (loading) {
@@ -532,8 +521,6 @@ export default function Mapas() {
                       <p><strong>Eleitores Aptos:</strong> {m.totalAptos.toLocaleString('pt-BR')}</p>
                       <p><strong>Participação:</strong> {m.participacao.toFixed(1)}%</p>
                       <p><strong>Abstenção:</strong> {m.abstencao.toFixed(1)}%</p>
-                      <p><strong>Votos Nulos:</strong> {m.votosNulos.toLocaleString('pt-BR')}</p>
-                      <p><strong>Votos Brancos:</strong> {m.votosBrancos.toLocaleString('pt-BR')}</p>
                     </div>
                   </div>
                 </Popup>
@@ -568,8 +555,6 @@ export default function Mapas() {
                 <th className="text-right p-3 font-semibold">Eleitores</th>
                 <th className="text-right p-3 font-semibold">Participação</th>
                 <th className="text-right p-3 font-semibold">Abstenção</th>
-                <th className="text-right p-3 font-semibold">Nulos</th>
-                <th className="text-right p-3 font-semibold">Brancos</th>
               </tr>
             </thead>
             <tbody>
@@ -589,8 +574,6 @@ export default function Mapas() {
                       {m.abstencao.toFixed(1)}%
                     </span>
                   </td>
-                  <td className="p-3 text-right">{m.votosNulos.toLocaleString('pt-BR')}</td>
-                  <td className="p-3 text-right">{m.votosBrancos.toLocaleString('pt-BR')}</td>
                 </tr>
               ))}
             </tbody>
