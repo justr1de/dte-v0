@@ -90,6 +90,37 @@ export default function GerenciarUsuarios() {
     }
   }
 
+  const handleSubmitForm = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (editingUser) {
+      // Atualizar usuário existente
+      try {
+        const { error } = await supabase
+          .from('users')
+          .update({
+            name: formData.name,
+            role: formData.role
+          })
+          .eq('id', editingUser.id)
+
+        if (error) throw error
+
+        toast.success('Usuário atualizado com sucesso!')
+        setShowModal(false)
+        setEditingUser(null)
+        setFormData({ name: '', email: '', password: '', role: 'candidato' })
+        fetchUsuarios()
+      } catch (error: any) {
+        console.error('Erro ao atualizar usuário:', error)
+        toast.error(error.message || 'Erro ao atualizar usuário')
+      }
+    } else {
+      // Criar novo usuário
+      await handleCreateUser(e)
+    }
+  }
+
   const handleUpdateUser = async (userId: string, updates: Partial<Usuario>) => {
     try {
       const { error } = await supabase
@@ -353,7 +384,7 @@ export default function GerenciarUsuarios() {
                   {editingUser ? 'Editar Usuário' : 'Novo Usuário'}
                 </h2>
               </div>
-              <form onSubmit={handleCreateUser} className="p-6 space-y-4">
+              <form onSubmit={handleSubmitForm} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <User className="w-4 h-4 inline mr-2" />
