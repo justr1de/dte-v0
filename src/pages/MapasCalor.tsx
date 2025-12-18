@@ -367,25 +367,31 @@ export default function MapasCalor() {
         </div>
       </div>
 
-      {/* Instruções para Implementação de Mapa Real */}
-      <div className="card p-6 bg-blue-500/10 border-blue-500/20">
+      {/* Links para Mapas Interativos */}
+      <div className="card p-6 bg-green-500/10 border-green-500/20">
         <div className="flex items-start gap-3">
-          <Info className="w-6 h-6 text-blue-500 flex-shrink-0 mt-1" />
+          <MapPin className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" />
           <div>
-            <h3 className="font-semibold text-blue-500 mb-2">Implementação de Mapa Interativo</h3>
-            <p className="text-sm text-[var(--text-secondary)] mb-3">
-              Para implementar um mapa de calor interativo com visualização geográfica real, siga estas direções:
+            <h3 className="font-semibold text-green-500 mb-2">Mapas Interativos Disponíveis</h3>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              Acesse os mapas de calor interativos com visualização geográfica real:
             </p>
-            <ol className="text-sm text-[var(--text-secondary)] space-y-2 list-decimal list-inside">
-              <li><strong>Leaflet.js + Leaflet.heat:</strong> Biblioteca leve para mapas interativos com plugin de heatmap</li>
-              <li><strong>GeoJSON de Rondônia:</strong> Baixe os polígonos dos municípios do IBGE (geojson.io)</li>
-              <li><strong>Coordenadas das seções:</strong> Utilize as coordenadas dos locais de votação do TSE</li>
-              <li><strong>Integração:</strong> Combine os dados do Supabase com as coordenadas para gerar pontos de calor</li>
-            </ol>
-            <div className="mt-4 p-3 bg-[var(--bg-secondary)] rounded-lg">
-              <code className="text-xs">
-                npm install leaflet leaflet.heat react-leaflet @types/leaflet
-              </code>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <a href="/mapa-calor-leaflet" className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-green-500 transition-all group">
+                <ThermometerSun className="w-8 h-8 text-green-500 mb-2" />
+                <h4 className="font-semibold group-hover:text-green-500">Mapa de Calor Dinâmico</h4>
+                <p className="text-xs text-[var(--text-secondary)] mt-1">Leaflet.heat com pontos por zona/seção</p>
+              </a>
+              <a href="/mapa-calor-google" className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-blue-500 transition-all group">
+                <Layers className="w-8 h-8 text-blue-500 mb-2" />
+                <h4 className="font-semibold group-hover:text-blue-500">Mapa Google Maps</h4>
+                <p className="text-xs text-[var(--text-secondary)] mt-1">HeatmapLayer com API do Google</p>
+              </a>
+              <a href="/mapa-interativo" className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-orange-500 transition-all group">
+                <MapPin className="w-8 h-8 text-orange-500 mb-2" />
+                <h4 className="font-semibold group-hover:text-orange-500">Mapa Interativo</h4>
+                <p className="text-xs text-[var(--text-secondary)] mt-1">GeoJSON com polígonos dos municípios</p>
+              </a>
             </div>
           </div>
         </div>
