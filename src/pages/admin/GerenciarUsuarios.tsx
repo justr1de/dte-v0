@@ -487,7 +487,7 @@ export default function GerenciarUsuarios() {
                     onClick={() => {
                       setShowModal(false)
                       setEditingUser(null)
-                      setFormData({ name: '', email: '', password: '', role: 'candidato' })
+                      setFormData({ name: '', display_name: '', email: '', password: '', role: 'candidato' })
                     }}
                     className="btn-secondary"
                   >
