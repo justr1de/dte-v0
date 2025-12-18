@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { CENTRO_RONDONIA, getCoordenadas } from '@/lib/coordenadasRO'
 import {
@@ -16,7 +16,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
+import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 interface MunicipioData {
@@ -43,15 +43,81 @@ export default function MapasCalor() {
   const [filtroMunicipio, setFiltroMunicipio] = useState<string>('todos')
   const [paginaAtual, setPaginaAtual] = useState(1)
   const itensPorPagina = 15
+  
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<L.Map | null>(null)
+  const markersRef = useRef<L.CircleMarker[]>([])
 
   useEffect(() => {
     fetchData()
   }, [filtroAno, filtroTurno])
 
+  // Inicializar mapa
+  useEffect(() => {
+    if (mapRef.current && !mapInstanceRef.current) {
+      mapInstanceRef.current = L.map(mapRef.current).setView(CENTRO_RONDONIA, 7)
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(mapInstanceRef.current)
+    }
+    
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
+      }
+    }
+  }, [])
+
+  // Atualizar marcadores quando dados mudam
+  useEffect(() => {
+    if (!mapInstanceRef.current) return
+    
+    // Remover marcadores antigos
+    markersRef.current.forEach(marker => marker.remove())
+    markersRef.current = []
+    
+    const municipiosFiltrados = filtroMunicipio === 'todos' 
+      ? municipios 
+      : municipios.filter(m => m.nm_municipio === filtroMunicipio)
+    
+    const maxValue = Math.max(...municipiosFiltrados.map(m => getMetricValue(m)), 1)
+    
+    municipiosFiltrados.forEach(m => {
+      const value = getMetricValue(m)
+      const color = getColor(value, maxValue, metricaSelecionada)
+      const radius = getRadius(value, maxValue)
+      
+      const marker = L.circleMarker([m.latitude, m.longitude], {
+        radius: radius,
+        fillColor: color,
+        fillOpacity: 0.7,
+        color: color,
+        weight: 2
+      }).addTo(mapInstanceRef.current!)
+      
+      marker.bindPopup(`
+        <div style="min-width: 200px; padding: 8px;">
+          <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${m.nm_municipio}</h3>
+          <div style="font-size: 14px; line-height: 1.6;">
+            <p><strong>Total de Votos:</strong> ${m.total_votos.toLocaleString('pt-BR')}</p>
+            <p><strong>Eleitores Aptos:</strong> ${m.total_aptos.toLocaleString('pt-BR')}</p>
+            <p><strong>Comparecimento:</strong> ${m.total_comparecimento.toLocaleString('pt-BR')}</p>
+            <p><strong>Abstenções:</strong> ${m.total_abstencoes.toLocaleString('pt-BR')}</p>
+            <p><strong>Participação:</strong> <span style="color: #22c55e;">${m.participacao.toFixed(1)}%</span></p>
+            <p><strong>Abstenção:</strong> <span style="color: #ef4444;">${m.abstencao.toFixed(1)}%</span></p>
+          </div>
+        </div>
+      `)
+      
+      markersRef.current.push(marker)
+    })
+  }, [municipios, filtroMunicipio, metricaSelecionada])
+
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Usar a função RPC get_mapa_eleitoral
       const { data, error } = await supabase.rpc('get_mapa_eleitoral', {
         p_ano: filtroAno,
         p_turno: filtroTurno
@@ -60,7 +126,6 @@ export default function MapasCalor() {
       if (error) throw error
 
       if (data && data.length > 0) {
-        // Adicionar coordenadas aos dados
         const municipiosComCoordenadas = data.map((m: any) => {
           const coords = getCoordenadas(m.nm_municipio)
           return {
@@ -79,18 +144,15 @@ export default function MapasCalor() {
     }
   }
 
-  // Filtrar municípios
   const municipiosFiltrados = filtroMunicipio === 'todos' 
     ? municipios 
     : municipios.filter(m => m.nm_municipio === filtroMunicipio)
 
-  // Paginação
   const totalPaginas = Math.ceil(municipiosFiltrados.length / itensPorPagina)
   const indiceInicio = (paginaAtual - 1) * itensPorPagina
   const indiceFim = indiceInicio + itensPorPagina
   const municipiosPaginados = municipiosFiltrados.slice(indiceInicio, indiceFim)
 
-  // Reset página quando filtro muda
   useEffect(() => {
     setPaginaAtual(1)
   }, [filtroMunicipio, filtroAno, filtroTurno])
@@ -98,14 +160,12 @@ export default function MapasCalor() {
   const getColor = (value: number, max: number, metric: MetricType): string => {
     const ratio = max > 0 ? value / max : 0
     if (metric === 'abstencao') {
-      // Vermelho para alta abstenção
       if (ratio > 0.8) return '#ef4444'
       if (ratio > 0.6) return '#f97316'
       if (ratio > 0.4) return '#f59e0b'
       if (ratio > 0.2) return '#84cc16'
       return '#22c55e'
     } else {
-      // Verde para alta participação/votos
       if (ratio > 0.8) return '#22c55e'
       if (ratio > 0.6) return '#84cc16'
       if (ratio > 0.4) return '#f59e0b'
@@ -136,7 +196,6 @@ export default function MapasCalor() {
 
   const maxValue = Math.max(...municipiosFiltrados.map(m => getMetricValue(m)), 1)
 
-  // Calcular raio do círculo baseado no valor
   const getRadius = (value: number, max: number): number => {
     const minRadius = 8
     const maxRadius = 35
@@ -151,14 +210,12 @@ export default function MapasCalor() {
     { key: 'eleitores' as MetricType, label: 'Eleitores Aptos', icon: Users },
   ]
 
-  // Estatísticas gerais
   const totalVotos = municipios.reduce((acc, m) => acc + m.total_votos, 0)
   const totalEleitores = municipios.reduce((acc, m) => acc + m.total_aptos, 0)
   const participacaoMedia = totalEleitores > 0 
     ? (municipios.reduce((acc, m) => acc + m.total_comparecimento, 0) / totalEleitores) * 100 
     : 0
 
-  // Exportar para CSV
   const exportarCSV = () => {
     const headers = ['#', 'Município', 'Total Votos', 'Eleitores Aptos', 'Comparecimento', 'Abstenções', 'Participação (%)', 'Abstenção (%)', 'Latitude', 'Longitude']
     const rows = municipiosFiltrados.map((m, i) => [
@@ -347,53 +404,11 @@ export default function MapasCalor() {
           </div>
         </div>
 
-        <div className="h-[500px] rounded-lg overflow-hidden border border-[var(--border-color)]">
-          <MapContainer
-            center={CENTRO_RONDONIA}
-            zoom={7}
-            style={{ height: '100%', width: '100%' }}
-            scrollWheelZoom={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
-            {municipiosFiltrados.map((m) => {
-              const value = getMetricValue(m)
-              const color = getColor(value, maxValue, metricaSelecionada)
-              const radius = getRadius(value, maxValue)
-              
-              return (
-                <CircleMarker
-                  key={m.cd_municipio}
-                  center={[m.latitude, m.longitude]}
-                  radius={radius}
-                  pathOptions={{
-                    fillColor: color,
-                    fillOpacity: 0.7,
-                    color: color,
-                    weight: 2
-                  }}
-                >
-                  <Popup>
-                    <div className="p-2 min-w-[200px]">
-                      <h3 className="font-bold text-lg mb-2">{m.nm_municipio}</h3>
-                      <div className="space-y-1 text-sm">
-                        <p><strong>Total de Votos:</strong> {m.total_votos.toLocaleString('pt-BR')}</p>
-                        <p><strong>Eleitores Aptos:</strong> {m.total_aptos.toLocaleString('pt-BR')}</p>
-                        <p><strong>Comparecimento:</strong> {m.total_comparecimento.toLocaleString('pt-BR')}</p>
-                        <p><strong>Abstenções:</strong> {m.total_abstencoes.toLocaleString('pt-BR')}</p>
-                        <p><strong>Participação:</strong> <span style={{color: '#22c55e'}}>{m.participacao.toFixed(1)}%</span></p>
-                        <p><strong>Abstenção:</strong> <span style={{color: '#ef4444'}}>{m.abstencao.toFixed(1)}%</span></p>
-                      </div>
-                    </div>
-                  </Popup>
-                </CircleMarker>
-              )
-            })}
-          </MapContainer>
-        </div>
+        <div 
+          ref={mapRef}
+          className="h-[500px] rounded-lg overflow-hidden border border-[var(--border-color)]"
+          style={{ zIndex: 1 }}
+        />
         
         <div className="mt-4 p-4 bg-[var(--bg-secondary)] rounded-lg">
           <div className="flex items-start gap-2">
