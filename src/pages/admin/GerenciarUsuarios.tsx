@@ -23,6 +23,7 @@ interface Usuario {
   id: string
   open_id: string
   name: string
+  display_name: string | null
   email: string
   role: 'admin' | 'gestor_campanha' | 'candidato'
   is_active: boolean
@@ -42,6 +43,7 @@ export default function GerenciarUsuarios() {
   // Form state
   const [formData, setFormData] = useState({
     name: '',
+    display_name: '',
     email: '',
     password: '',
     role: 'candidato' as 'admin' | 'gestor_campanha' | 'candidato'
@@ -77,12 +79,13 @@ export default function GerenciarUsuarios() {
         email: formData.email,
         password: formData.password,
         name: formData.name,
-        role: formData.role
+        role: formData.role,
+        display_name: formData.display_name || formData.name.split(' ')[0]
       })
 
       toast.success('Usuário criado com sucesso!')
       setShowModal(false)
-      setFormData({ name: '', email: '', password: '', role: 'candidato' })
+      setFormData({ name: '', display_name: '', email: '', password: '', role: 'candidato' })
       fetchUsuarios()
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error)
@@ -100,6 +103,7 @@ export default function GerenciarUsuarios() {
           .from('users')
           .update({
             name: formData.name,
+            display_name: formData.display_name,
             role: formData.role
           })
           .eq('id', editingUser.id)
@@ -109,7 +113,7 @@ export default function GerenciarUsuarios() {
         toast.success('Usuário atualizado com sucesso!')
         setShowModal(false)
         setEditingUser(null)
-        setFormData({ name: '', email: '', password: '', role: 'candidato' })
+        setFormData({ name: '', display_name: '', email: '', password: '', role: 'candidato' })
         fetchUsuarios()
       } catch (error: any) {
         console.error('Erro ao atualizar usuário:', error)
@@ -347,6 +351,7 @@ export default function GerenciarUsuarios() {
                               setEditingUser(user)
                               setFormData({
                                 name: user.name || '',
+                                display_name: user.display_name || '',
                                 email: user.email || '',
                                 password: '',
                                 role: user.role
@@ -398,6 +403,22 @@ export default function GerenciarUsuarios() {
                     placeholder="Nome do usuário"
                     required
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    <User className="w-4 h-4 inline mr-2" />
+                    Nome de Exibição (Display Name)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.display_name}
+                    onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+                    className="input w-full"
+                    placeholder="Como deseja ser chamado"
+                  />
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    Se não preenchido, usará o primeiro nome
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">

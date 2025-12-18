@@ -306,7 +306,7 @@ export default function Layout({ children }: LayoutProps) {
               {sidebarOpen && (
                 <>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{user?.name || 'Usuário'}</p>
+                    <p className="text-sm font-medium truncate">{user?.display_name || user?.name || 'Usuário'}</p>
                     <p className="text-xs text-[var(--text-muted)] capitalize">{user?.role?.replace('_', ' ') || 'Candidato'}</p>
                   </div>
                   <button

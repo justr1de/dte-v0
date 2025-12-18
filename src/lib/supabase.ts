@@ -11,6 +11,7 @@ export interface User {
   id: string
   email: string
   name: string
+  display_name?: string | null
   role: UserRole
   avatar_url?: string
   created_at: string
@@ -74,13 +75,15 @@ export async function createUserViaEdgeFunction(data: {
   password: string
   name: string
   role: string
+  display_name?: string
 }) {
   // Usar a função SQL create_dte_user via RPC
   const { data: result, error } = await supabase.rpc('create_dte_user', {
     p_email: data.email,
     p_password: data.password,
     p_name: data.name,
-    p_role: data.role
+    p_role: data.role,
+    p_display_name: data.display_name || null
   })
 
   if (error) {
