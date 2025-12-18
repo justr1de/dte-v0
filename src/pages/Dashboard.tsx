@@ -25,7 +25,8 @@ import {
   Cell,
   LineChart,
   Line,
-  Legend
+  Legend,
+  LabelList
 } from 'recharts'
 
 interface Stats {
@@ -39,36 +40,45 @@ interface Stats {
 
 interface VotoPartido {
   sigla: string
+  nome: string
   votos: number
   cor: string
 }
 
-const CORES_PARTIDOS: Record<string, string> = {
-  'PT': '#CC0000',
-  'PL': '#1E3A8A',
-  'MDB': '#00A859',
-  'PP': '#0066CC',
-  'UNIÃO': '#003399',
-  'PSD': '#FF6B00',
-  'PSDB': '#0080FF',
-  'PDT': '#FF0000',
-  'PODEMOS': '#6B21A8',
-  'REPUBLICANOS': '#1E40AF',
-  'PSB': '#FFD700',
-  'CIDADANIA': '#E91E63',
-  'SOLIDARIEDADE': '#FF5722',
-  'PSOL': '#FFEB3B',
-  'PCdoB': '#B71C1C',
-  'REDE': '#00BCD4',
-  'NOVO': '#FF6F00',
-  'AVANTE': '#FF9800',
-  'PMB': '#9C27B0',
-  'DC': '#4CAF50',
-  'default': '#6B7280'
+const CORES_PARTIDOS: Record<string, { cor: string; nome: string }> = {
+  'PT': { cor: '#CC0000', nome: 'Partido dos Trabalhadores' },
+  'PL': { cor: '#1E3A8A', nome: 'Partido Liberal' },
+  'MDB': { cor: '#00A859', nome: 'Movimento Democrático Brasileiro' },
+  'PP': { cor: '#0066CC', nome: 'Progressistas' },
+  'UNIÃO': { cor: '#003399', nome: 'União Brasil' },
+  'PSD': { cor: '#FF6B00', nome: 'Partido Social Democrático' },
+  'PSDB': { cor: '#0080FF', nome: 'Partido da Social Democracia Brasileira' },
+  'PDT': { cor: '#FF0000', nome: 'Partido Democrático Trabalhista' },
+  'PODE': { cor: '#6B21A8', nome: 'Podemos' },
+  'PODEMOS': { cor: '#6B21A8', nome: 'Podemos' },
+  'REPUBLICANOS': { cor: '#1E40AF', nome: 'Republicanos' },
+  'PSB': { cor: '#FFD700', nome: 'Partido Socialista Brasileiro' },
+  'CIDADANIA': { cor: '#E91E63', nome: 'Cidadania' },
+  'SOLIDARIEDADE': { cor: '#FF5722', nome: 'Solidariedade' },
+  'PSOL': { cor: '#FFEB3B', nome: 'Partido Socialismo e Liberdade' },
+  'PCdoB': { cor: '#B71C1C', nome: 'Partido Comunista do Brasil' },
+  'REDE': { cor: '#00BCD4', nome: 'Rede Sustentabilidade' },
+  'NOVO': { cor: '#FF6F00', nome: 'Partido Novo' },
+  'AVANTE': { cor: '#FF9800', nome: 'Avante' },
+  'PMB': { cor: '#9C27B0', nome: 'Partido da Mulher Brasileira' },
+  'DC': { cor: '#4CAF50', nome: 'Democracia Cristã' },
+  'PRD': { cor: '#795548', nome: 'Partido Renovação Democrática' },
+  'AGIR': { cor: '#607D8B', nome: 'Agir' },
+  'MOBILIZA': { cor: '#009688', nome: 'Mobiliza' },
+  'default': { cor: '#6B7280', nome: 'Outros' }
 }
 
 function getCorPartido(sigla: string): string {
-  return CORES_PARTIDOS[sigla?.toUpperCase()] || CORES_PARTIDOS['default']
+  return CORES_PARTIDOS[sigla?.toUpperCase()]?.cor || CORES_PARTIDOS['default'].cor
+}
+
+function getNomePartido(sigla: string): string {
+  return CORES_PARTIDOS[sigla?.toUpperCase()]?.nome || sigla
 }
 
 export default function Dashboard() {
@@ -109,23 +119,24 @@ export default function Dashboard() {
 
       if (perfilError) throw perfilError
 
-      // Buscar votos por partido (amostra limitada para performance)
+      // Buscar votos por partido - CORRIGIDO: filtrar por UF e aumentar limite
       const { data: votosData, error: votosError } = await supabase
         .from('boletins_urna')
         .select('sg_partido, qt_votos')
         .eq('ano_eleicao', filtroAno)
         .eq('nr_turno', filtroTurno)
+        .eq('sg_uf', 'RO')  // FILTRO POR RONDÔNIA
         .eq('ds_tipo_votavel', 'Nominal')
-        .limit(50000)
 
       if (votosError) throw votosError
 
-      // Buscar votos nulos e brancos
+      // Buscar votos nulos e brancos - CORRIGIDO: filtrar por UF
       const { data: nulosBrancos, error: nbError } = await supabase
         .from('boletins_urna')
         .select('ds_tipo_votavel, qt_votos')
         .eq('ano_eleicao', filtroAno)
         .eq('nr_turno', filtroTurno)
+        .eq('sg_uf', 'RO')  // FILTRO POR RONDÔNIA
         .in('ds_tipo_votavel', ['Nulo', 'Branco'])
 
       // Calcular estatísticas
@@ -178,6 +189,7 @@ export default function Dashboard() {
       const votosPartidoArr = Object.entries(partidosMap)
         .map(([sigla, votos]) => ({
           sigla,
+          nome: getNomePartido(sigla),
           votos,
           cor: getCorPartido(sigla)
         }))
@@ -338,33 +350,53 @@ export default function Dashboard() {
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Votos por Partido */}
+            {/* Votos por Partido - COM LEGENDA DOS NOMES */}
             <div className="card p-6">
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-5 h-5 text-[var(--accent-color)]" />
                 <h2 className="text-lg font-semibold">Top 10 Partidos por Votos</h2>
               </div>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={votosPartido} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                    <XAxis type="number" stroke="var(--text-secondary)" />
-                    <YAxis dataKey="sigla" type="category" stroke="var(--text-secondary)" width={60} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'var(--bg-card)', 
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '8px'
-                      }}
-                      formatter={(value: number) => [value.toLocaleString('pt-BR'), 'Votos']}
+              <div className="flex gap-4">
+                {/* Gráfico */}
+                <div className="flex-1 h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={votosPartido} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                      <XAxis type="number" stroke="var(--text-secondary)" tickFormatter={(v) => v.toLocaleString('pt-BR')} />
+                      <YAxis dataKey="sigla" type="category" stroke="var(--text-secondary)" width={60} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'var(--bg-card)', 
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '8px'
+                        }}
+                        formatter={(value: number, name: string, props: any) => [
+                          value.toLocaleString('pt-BR'), 
+                          props.payload.nome
+                        ]}
+                        labelFormatter={(label) => `${label}`}
+                      />
+                      <Bar dataKey="votos" radius={[0, 4, 4, 0]}>
+                        {votosPartido.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.cor} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              {/* Legenda com nomes dos partidos */}
+              <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                {votosPartido.map((p, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: p.cor }} 
                     />
-                    <Bar dataKey="votos" radius={[0, 4, 4, 0]}>
-                      {votosPartido.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.cor} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                    <span className="font-medium">{p.sigla}</span>
+                    <span className="text-[var(--text-secondary)] truncate">- {p.nome}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
