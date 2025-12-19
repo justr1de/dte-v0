@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Layout from '@/components/Layout'
+// Layout removido - já aplicado no App.tsx via ProtectedRoute
 import { 
   Bell, 
   PlusCircle, 
@@ -150,7 +150,7 @@ export default function AcoesCampanha() {
   }
 
   return (
-    <Layout>
+    <div className="space-y-6 animate-fadeIn">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -412,6 +412,6 @@ export default function AcoesCampanha() {
           </div>
         )}
       </div>
-    </Layout>
+    </div>
   )
 }

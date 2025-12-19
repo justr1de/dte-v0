@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Layout from '@/components/Layout'
+// Layout removido - já aplicado no App.tsx via AdminRoute
 import { 
   KeyRound, 
   Shield, 
@@ -80,7 +80,7 @@ export default function ControleAcessos() {
   ]
 
   return (
-    <Layout>
+    <div className="space-y-6 animate-fadeIn">
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -210,6 +210,6 @@ export default function ControleAcessos() {
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   )
 }

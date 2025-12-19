@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import Layout from '@/components/Layout'
+// Layout removido - já aplicado no App.tsx via ProtectedRoute
 import {
   MapPin,
   Filter,
@@ -188,8 +188,7 @@ export default function Mapas() {
   }
 
   return (
-    <Layout>
-      <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -478,7 +477,6 @@ export default function Mapas() {
             </div>
           </>
         )}
-      </div>
-    </Layout>
+    </div>
   )
 }

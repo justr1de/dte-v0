@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Layout from '@/components/Layout'
+// Layout removido - já aplicado no App.tsx via ProtectedRoute
 import { supabase } from '@/lib/supabase'
 import { 
   ArrowLeft, 
@@ -138,7 +138,7 @@ export default function CriarPesquisa() {
   }
 
   return (
-    <Layout>
+    <div className="space-y-6 animate-fadeIn">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -416,6 +416,6 @@ export default function CriarPesquisa() {
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   )
 }
