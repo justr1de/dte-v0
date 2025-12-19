@@ -12,7 +12,10 @@ import {
   Download,
   Layers,
   Info,
-  BarChart3
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  School
 } from 'lucide-react'
 import { GoogleMap, useJsApiLoader, HeatmapLayer } from '@react-google-maps/api'
 
@@ -20,7 +23,7 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyATbu5wi9oIQo7hkjNiCjgXI6Gji18ucuI'
 
 interface ZonaData {
   nr_zona: number
-  nm_municipio: string
+  municipios: string[]
   total_votos: number
   total_aptos: number
   total_comparecimento: number
@@ -29,40 +32,81 @@ interface ZonaData {
   abstencao: number
   latitude: number
   longitude: number
+  locais_votacao: LocalVotacao[]
 }
 
-// Coordenadas aproximadas das zonas eleitorais de Rondônia
-// Baseadas nas sedes dos municípios que compõem cada zona
-const ZONAS_COORDS: Record<number, { lat: number, lng: number, municipio: string }> = {
-  1: { lat: -8.7612, lng: -63.9004, municipio: 'PORTO VELHO' },
-  2: { lat: -8.7612, lng: -63.9004, municipio: 'PORTO VELHO' },
-  3: { lat: -10.8853, lng: -61.9517, municipio: 'JI-PARANÁ' },
-  4: { lat: -11.4386, lng: -61.4472, municipio: 'CACOAL' },
-  5: { lat: -12.7406, lng: -60.1458, municipio: 'VILHENA' },
-  6: { lat: -8.7612, lng: -63.9004, municipio: 'PORTO VELHO' },
-  7: { lat: -9.9082, lng: -63.0408, municipio: 'ARIQUEMES' },
-  8: { lat: -10.7833, lng: -65.3500, municipio: 'GUAJARÁ-MIRIM' },
-  9: { lat: -11.6725, lng: -61.1936, municipio: 'PIMENTA BUENO' },
-  10: { lat: -10.4389, lng: -62.4664, municipio: 'JARU' },
-  11: { lat: -10.7250, lng: -62.2500, municipio: 'OURO PRETO DO OESTE' },
-  12: { lat: -11.7279, lng: -61.7714, municipio: 'ROLIM DE MOURA' },
-  13: { lat: -13.1175, lng: -60.5444, municipio: 'COLORADO DO OESTE' },
-  15: { lat: -11.5267, lng: -61.0147, municipio: 'ESPIGÃO D\'OESTE' },
-  16: { lat: -13.4833, lng: -61.0500, municipio: 'PIMENTEIRAS DO OESTE' },
-  17: { lat: -11.9356, lng: -61.9997, municipio: 'ALTA FLORESTA D\'OESTE' },
-  18: { lat: -11.1750, lng: -61.9000, municipio: 'PRESIDENTE MÉDICI' },
-  19: { lat: -11.9000, lng: -61.5000, municipio: 'SÃO FELIPE D\'OESTE' },
-  20: { lat: -8.7612, lng: -63.9004, municipio: 'PORTO VELHO' },
-  21: { lat: -8.7612, lng: -63.9004, municipio: 'PORTO VELHO' },
-  25: { lat: -10.2125, lng: -63.8292, municipio: 'BURITIS' },
-  26: { lat: -9.3667, lng: -62.5833, municipio: 'CUJUBIM' },
-  27: { lat: -9.4428, lng: -61.9814, municipio: 'MACHADINHO D\'OESTE' },
-  28: { lat: -10.9000, lng: -62.5500, municipio: 'NOVA UNIÃO' },
-  29: { lat: -8.7833, lng: -63.7000, municipio: 'CANDEIAS DO JAMARI' },
-  30: { lat: -10.8853, lng: -61.9517, municipio: 'JI-PARANÁ' },
-  32: { lat: -12.9833, lng: -60.9167, municipio: 'CORUMBIARA' },
-  34: { lat: -9.1833, lng: -63.1500, municipio: 'ITAPUÃ DO OESTE' },
-  35: { lat: -8.7612, lng: -63.9004, municipio: 'PORTO VELHO' },
+interface LocalVotacao {
+  nr_local: number
+  nm_local: string
+  endereco: string
+  municipio: string
+  qt_secoes: number
+}
+
+// Mapeamento de zonas para municípios (dados do TSE 2020)
+const ZONAS_MUNICIPIOS: Record<number, string[]> = {
+  1: ['GUAJARÁ-MIRIM', 'NOVA MAMORÉ'],
+  2: ['ITAPUÃ DO OESTE', 'PORTO VELHO'],
+  3: ['JI-PARANÁ', 'PRESIDENTE MÉDICI'],
+  4: ['VILHENA'],
+  5: ['COSTA MARQUES', 'SÃO FRANCISCO DO GUAPORÉ'],
+  6: ['PORTO VELHO'],
+  7: ['ARIQUEMES'],
+  8: ['CABIXI', 'CHUPINGUAIA', 'COLORADO DO OESTE'],
+  9: ['PIMENTA BUENO', 'PRIMAVERA DE RONDÔNIA'],
+  10: ['JARU'],
+  11: ['CACOAL', 'MINISTRO ANDREAZZA'],
+  12: ['ESPIGÃO DO OESTE'],
+  13: ['OURO PRETO DO OESTE', 'TEIXEIRÓPOLIS'],
+  15: ['CASTANHEIRAS', 'NOVA BRASILÂNDIA D\'OESTE', 'NOVO HORIZONTE DO OESTE'],
+  16: ['CEREJEIRAS', 'CORUMBIARA', 'PIMENTEIRAS DO OESTE'],
+  17: ['ALTA FLORESTA D\'OESTE'],
+  18: ['ALVORADA DO OESTE', 'URUPÁ'],
+  19: ['ALTO ALEGRE DOS PARECIS', 'PARECIS', 'SANTA LUZIA D\'OESTE', 'SÃO FELIPE D\'OESTE'],
+  20: ['PORTO VELHO'],
+  21: ['CANDEIAS DO JAMARI', 'PORTO VELHO'],
+  25: ['ALTO PARAÍSO', 'MONTE NEGRO'],
+  26: ['CACAULÂNDIA', 'CUJUBIM', 'RIO CRESPO'],
+  27: ['GOVERNADOR JORGE TEIXEIRA', 'THEOBROMA'],
+  28: ['MIRANTE DA SERRA', 'NOVA UNIÃO', 'VALE DO PARAÍSO'],
+  29: ['ROLIM DE MOURA'],
+  30: ['JI-PARANÁ'],
+  32: ['MACHADINHO D\'OESTE', 'VALE DO ANARI'],
+  34: ['BURITIS', 'CAMPO NOVO DE RONDÔNIA'],
+  35: ['SERINGUEIRAS', 'SÃO MIGUEL DO GUAPORÉ'],
+}
+
+// Coordenadas das zonas eleitorais de Rondônia
+const ZONAS_COORDS: Record<number, { lat: number, lng: number }> = {
+  1: { lat: -10.7833, lng: -65.3500 },  // Guajará-Mirim
+  2: { lat: -8.7612, lng: -63.9004 },   // Porto Velho
+  3: { lat: -10.8853, lng: -61.9517 },  // Ji-Paraná
+  4: { lat: -12.7406, lng: -60.1458 },  // Vilhena
+  5: { lat: -12.4389, lng: -64.2278 },  // Costa Marques
+  6: { lat: -8.7612, lng: -63.9004 },   // Porto Velho
+  7: { lat: -9.9082, lng: -63.0408 },   // Ariquemes
+  8: { lat: -13.1175, lng: -60.5444 },  // Colorado do Oeste
+  9: { lat: -11.6725, lng: -61.1936 },  // Pimenta Bueno
+  10: { lat: -10.4389, lng: -62.4664 }, // Jaru
+  11: { lat: -11.4386, lng: -61.4472 }, // Cacoal
+  12: { lat: -11.5267, lng: -61.0147 }, // Espigão do Oeste
+  13: { lat: -10.7250, lng: -62.2500 }, // Ouro Preto do Oeste
+  15: { lat: -11.7250, lng: -62.3167 }, // Nova Brasilândia
+  16: { lat: -13.1944, lng: -60.8167 }, // Cerejeiras
+  17: { lat: -11.9356, lng: -61.9997 }, // Alta Floresta
+  18: { lat: -11.3500, lng: -62.2833 }, // Alvorada do Oeste
+  19: { lat: -12.1333, lng: -61.8500 }, // Alto Alegre dos Parecis
+  20: { lat: -8.7612, lng: -63.9004 },  // Porto Velho
+  21: { lat: -8.7833, lng: -63.7000 },  // Candeias do Jamari
+  25: { lat: -10.2500, lng: -63.3000 }, // Monte Negro
+  26: { lat: -9.3667, lng: -62.5833 },  // Cujubim
+  27: { lat: -10.6167, lng: -62.7500 }, // Gov. Jorge Teixeira
+  28: { lat: -11.0333, lng: -62.6667 }, // Mirante da Serra
+  29: { lat: -11.7279, lng: -61.7714 }, // Rolim de Moura
+  30: { lat: -10.8853, lng: -61.9517 }, // Ji-Paraná
+  32: { lat: -9.4428, lng: -61.9814 },  // Machadinho
+  34: { lat: -10.2125, lng: -63.8292 }, // Buritis
+  35: { lat: -11.6917, lng: -62.7167 }, // São Miguel do Guaporé
 }
 
 type MetricType = 'votos' | 'participacao' | 'abstencao' | 'densidade'
@@ -89,6 +133,8 @@ export default function Mapas() {
   const [heatmapData, setHeatmapData] = useState<google.maps.visualization.WeightedLocation[]>([])
   const [totalVotosGeral, setTotalVotosGeral] = useState(0)
   const [totalEleitores, setTotalEleitores] = useState(0)
+  const [zonaExpandida, setZonaExpandida] = useState<number | null>(null)
+  const [locaisVotacao, setLocaisVotacao] = useState<Record<number, LocalVotacao[]>>({})
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -109,54 +155,10 @@ export default function Mapas() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Buscar dados agregados por zona eleitoral
-      const { data, error } = await supabase.rpc('get_dados_por_zona', {
-        p_ano: filtroAno,
-        p_turno: filtroTurno
-      })
-
-      if (error) {
-        console.error('Erro na função RPC, tentando fallback:', error)
-        // Fallback: buscar dados diretamente
-        await fetchDataFallback()
-        return
-      }
-
-      if (data && data.length > 0) {
-        const zonasData: ZonaData[] = data.map((d: any) => {
-          const coords = ZONAS_COORDS[d.nr_zona] || { lat: -10.8, lng: -62.5, municipio: 'DESCONHECIDO' }
-          return {
-            nr_zona: d.nr_zona,
-            nm_municipio: coords.municipio,
-            total_votos: Number(d.total_votos) || 0,
-            total_aptos: Number(d.total_aptos) || 0,
-            total_comparecimento: Number(d.total_comparecimento) || 0,
-            total_abstencoes: Number(d.total_abstencoes) || 0,
-            participacao: Number(d.participacao) || 0,
-            abstencao: Number(d.abstencao) || 0,
-            latitude: coords.lat,
-            longitude: coords.lng
-          }
-        })
-
-        setZonas(zonasData.sort((a, b) => b.total_votos - a.total_votos))
-        setTotalVotosGeral(zonasData.reduce((acc, z) => acc + z.total_votos, 0))
-        setTotalEleitores(zonasData.reduce((acc, z) => acc + z.total_aptos, 0))
-      }
-    } catch (error) {
-      console.error('Erro ao buscar dados:', error)
-      await fetchDataFallback()
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchDataFallback = async () => {
-    try {
-      // Buscar dados diretamente da tabela boletins_urna
+      // Buscar dados diretamente da tabela boletins_urna agrupados por zona
       const { data: boletins, error } = await supabase
         .from('boletins_urna')
-        .select('nr_zona, nm_municipio, nr_secao, qt_votos, qt_aptos, qt_comparecimento, qt_abstencoes')
+        .select('nr_zona, nm_municipio, nr_secao, nr_local_votacao, qt_votos, qt_aptos, qt_comparecimento, qt_abstencoes')
         .eq('ano_eleicao', filtroAno)
         .eq('nr_turno', filtroTurno)
         .eq('cd_cargo_pergunta', 11) // Apenas Prefeito
@@ -165,29 +167,35 @@ export default function Mapas() {
       if (error) throw error
 
       if (boletins && boletins.length > 0) {
-        // Agregar por zona, evitando duplicação por seção
+        // Agregar por zona
         const zonaMap: Record<number, {
+          municipios: Set<string>,
           total_votos: number,
           total_aptos: number,
           total_comparecimento: number,
           total_abstencoes: number,
-          secoes: Set<string>
+          secoes: Set<string>,
+          locais: Map<number, { nm_local: string, endereco: string, municipio: string, secoes: Set<string> }>
         }> = {}
 
         boletins.forEach(b => {
           const zona = b.nr_zona
           const secaoKey = `${zona}-${b.nr_secao}`
+          const localKey = b.nr_local_votacao
           
           if (!zonaMap[zona]) {
             zonaMap[zona] = {
+              municipios: new Set(),
               total_votos: 0,
               total_aptos: 0,
               total_comparecimento: 0,
               total_abstencoes: 0,
-              secoes: new Set()
+              secoes: new Set(),
+              locais: new Map()
             }
           }
           
+          zonaMap[zona].municipios.add(b.nm_municipio)
           zonaMap[zona].total_votos += b.qt_votos || 0
           
           // Evitar duplicação de seções
@@ -197,17 +205,42 @@ export default function Mapas() {
             zonaMap[zona].total_comparecimento += b.qt_comparecimento || 0
             zonaMap[zona].total_abstencoes += b.qt_abstencoes || 0
           }
+
+          // Agregar locais de votação
+          if (localKey && !zonaMap[zona].locais.has(localKey)) {
+            zonaMap[zona].locais.set(localKey, {
+              nm_local: '',
+              endereco: '',
+              municipio: b.nm_municipio,
+              secoes: new Set()
+            })
+          }
+          if (localKey) {
+            zonaMap[zona].locais.get(localKey)?.secoes.add(String(b.nr_secao))
+          }
         })
 
         const zonasData: ZonaData[] = Object.entries(zonaMap).map(([zona, data]) => {
           const nrZona = Number(zona)
-          const coords = ZONAS_COORDS[nrZona] || { lat: -10.8, lng: -62.5, municipio: 'DESCONHECIDO' }
+          const coords = ZONAS_COORDS[nrZona] || { lat: -10.8, lng: -62.5 }
           const participacao = data.total_aptos > 0 ? (data.total_comparecimento / data.total_aptos) * 100 : 0
           const abstencao = data.total_aptos > 0 ? (data.total_abstencoes / data.total_aptos) * 100 : 0
           
+          // Usar municípios do mapeamento estático ou dos dados
+          const municipios = ZONAS_MUNICIPIOS[nrZona] || Array.from(data.municipios)
+          
+          // Converter locais para array
+          const locaisArray: LocalVotacao[] = Array.from(data.locais.entries()).map(([nr, info]) => ({
+            nr_local: nr,
+            nm_local: info.nm_local || `Local ${nr}`,
+            endereco: info.endereco,
+            municipio: info.municipio,
+            qt_secoes: info.secoes.size
+          }))
+          
           return {
             nr_zona: nrZona,
-            nm_municipio: coords.municipio,
+            municipios,
             total_votos: data.total_comparecimento, // Usar comparecimento como total de votos
             total_aptos: data.total_aptos,
             total_comparecimento: data.total_comparecimento,
@@ -215,7 +248,8 @@ export default function Mapas() {
             participacao,
             abstencao,
             latitude: coords.lat,
-            longitude: coords.lng
+            longitude: coords.lng,
+            locais_votacao: locaisArray
           }
         })
 
@@ -224,7 +258,9 @@ export default function Mapas() {
         setTotalEleitores(zonasData.reduce((acc, z) => acc + z.total_aptos, 0))
       }
     } catch (error) {
-      console.error('Erro no fallback:', error)
+      console.error('Erro ao buscar dados:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -288,16 +324,17 @@ export default function Mapas() {
   }
 
   const exportarCSV = () => {
-    const headers = ['Zona', 'Município Sede', 'Total Votos', 'Eleitores Aptos', 'Comparecimento', 'Abstenções', 'Participação (%)', 'Abstenção (%)']
+    const headers = ['Zona', 'Municípios', 'Total Votos', 'Eleitores Aptos', 'Comparecimento', 'Abstenções', 'Participação (%)', 'Abstenção (%)', 'Locais de Votação']
     const rows = zonas.map(z => [
       z.nr_zona,
-      z.nm_municipio,
+      z.municipios.join('; '),
       z.total_votos,
       z.total_aptos,
       z.total_comparecimento,
       z.total_abstencoes,
       z.participacao.toFixed(2),
-      z.abstencao.toFixed(2)
+      z.abstencao.toFixed(2),
+      z.locais_votacao.length
     ])
     
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
@@ -306,6 +343,10 @@ export default function Mapas() {
     link.href = URL.createObjectURL(blob)
     link.download = `mapa_calor_zonas_${filtroAno}_turno${filtroTurno}.csv`
     link.click()
+  }
+
+  const toggleZonaExpandida = (zona: number) => {
+    setZonaExpandida(zonaExpandida === zona ? null : zona)
   }
 
   if (!isLoaded) {
@@ -482,12 +523,12 @@ export default function Mapas() {
         </div>
       </div>
 
-      {/* Ranking por Zona */}
+      {/* Detalhamento por Zona */}
       <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-[var(--accent-color)]" />
-            <h2 className="text-lg font-semibold">Ranking por Zona Eleitoral - {metricas.find(m => m.key === metricaSelecionada)?.label}</h2>
+            <h2 className="text-lg font-semibold">Detalhamento por Zona Eleitoral</h2>
           </div>
           <button 
             onClick={exportarCSV}
@@ -498,41 +539,131 @@ export default function Mapas() {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[var(--border-color)]">
-                <th className="text-left p-3 font-semibold">#</th>
-                <th className="text-left p-3 font-semibold">Zona</th>
-                <th className="text-left p-3 font-semibold">Município Sede</th>
-                <th className="text-right p-3 font-semibold">Total Votos</th>
-                <th className="text-right p-3 font-semibold">Eleitores</th>
-                <th className="text-right p-3 font-semibold">Participação</th>
-                <th className="text-right p-3 font-semibold">Abstenção</th>
-              </tr>
-            </thead>
-            <tbody>
-              {zonas.map((z, index) => (
-                <tr key={z.nr_zona} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-secondary)]">
-                  <td className="p-3 text-[var(--text-secondary)]">{index + 1}</td>
-                  <td className="p-3 font-medium">Zona {z.nr_zona}</td>
-                  <td className="p-3">{z.nm_municipio}</td>
-                  <td className="p-3 text-right">{z.total_votos.toLocaleString('pt-BR')}</td>
-                  <td className="p-3 text-right">{z.total_aptos.toLocaleString('pt-BR')}</td>
-                  <td className="p-3 text-right">
-                    <span className={`px-2 py-1 rounded text-sm ${z.participacao >= 75 ? 'bg-green-500/20 text-green-500' : z.participacao >= 60 ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'}`}>
-                      {z.participacao.toFixed(1)}%
-                    </span>
-                  </td>
-                  <td className="p-3 text-right">
-                    <span className={`px-2 py-1 rounded text-sm ${z.abstencao <= 25 ? 'bg-green-500/20 text-green-500' : z.abstencao <= 40 ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'}`}>
-                      {z.abstencao.toFixed(1)}%
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-3">
+          {zonas.map((z, index) => (
+            <div key={z.nr_zona} className="border border-[var(--border-color)] rounded-lg overflow-hidden">
+              {/* Cabeçalho da Zona (clicável) */}
+              <div 
+                className="p-4 bg-[var(--bg-secondary)] cursor-pointer hover:bg-[var(--bg-secondary)]/80 transition-colors"
+                onClick={() => toggleZonaExpandida(z.nr_zona)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="text-lg font-bold text-[var(--accent-color)]">#{index + 1}</span>
+                    <div>
+                      <h3 className="font-semibold flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        Zona {z.nr_zona}
+                      </h3>
+                      <p className="text-sm text-[var(--text-secondary)] flex items-center gap-1">
+                        <Building2 className="w-3 h-3" />
+                        {z.municipios.join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className="text-sm text-[var(--text-secondary)]">Votos</p>
+                      <p className="font-bold">{z.total_votos.toLocaleString('pt-BR')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-[var(--text-secondary)]">Eleitores</p>
+                      <p className="font-bold">{z.total_aptos.toLocaleString('pt-BR')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-[var(--text-secondary)]">Participação</p>
+                      <span className={`px-2 py-1 rounded text-sm font-bold ${z.participacao >= 75 ? 'bg-green-500/20 text-green-500' : z.participacao >= 60 ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'}`}>
+                        {z.participacao.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-[var(--text-secondary)]">Locais</p>
+                      <p className="font-bold flex items-center gap-1">
+                        <School className="w-4 h-4" />
+                        {z.locais_votacao.length}
+                      </p>
+                    </div>
+                    {zonaExpandida === z.nr_zona ? (
+                      <ChevronUp className="w-5 h-5 text-[var(--text-secondary)]" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-[var(--text-secondary)]" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Detalhes expandidos */}
+              {zonaExpandida === z.nr_zona && (
+                <div className="p-4 border-t border-[var(--border-color)]">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="p-3 bg-[var(--bg-primary)] rounded-lg">
+                      <h4 className="font-semibold mb-2 flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-blue-500" />
+                        Municípios da Zona
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {z.municipios.map(mun => (
+                          <span key={mun} className="px-2 py-1 bg-blue-500/10 text-blue-500 rounded text-sm">
+                            {mun}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="p-3 bg-[var(--bg-primary)] rounded-lg">
+                      <h4 className="font-semibold mb-2">Estatísticas Detalhadas</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-[var(--text-secondary)]">Comparecimento:</span>
+                          <span className="ml-2 font-medium">{z.total_comparecimento.toLocaleString('pt-BR')}</span>
+                        </div>
+                        <div>
+                          <span className="text-[var(--text-secondary)]">Abstenções:</span>
+                          <span className="ml-2 font-medium">{z.total_abstencoes.toLocaleString('pt-BR')}</span>
+                        </div>
+                        <div>
+                          <span className="text-[var(--text-secondary)]">Taxa Abstenção:</span>
+                          <span className={`ml-2 font-medium ${z.abstencao <= 25 ? 'text-green-500' : z.abstencao <= 40 ? 'text-yellow-500' : 'text-red-500'}`}>
+                            {z.abstencao.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[var(--text-secondary)]">Locais de Votação:</span>
+                          <span className="ml-2 font-medium">{z.locais_votacao.length}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lista de Locais de Votação */}
+                  {z.locais_votacao.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <School className="w-4 h-4 text-emerald-500" />
+                        Locais de Votação ({z.locais_votacao.length})
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                        {z.locais_votacao.slice(0, 12).map((local, idx) => (
+                          <div key={idx} className="p-3 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]">
+                            <p className="font-medium text-sm">{local.nm_local || `Local ${local.nr_local}`}</p>
+                            <p className="text-xs text-[var(--text-secondary)]">{local.municipio}</p>
+                            {local.endereco && (
+                              <p className="text-xs text-[var(--text-secondary)] mt-1">{local.endereco}</p>
+                            )}
+                            <p className="text-xs text-emerald-500 mt-1">{local.qt_secoes} seções</p>
+                          </div>
+                        ))}
+                      </div>
+                      {z.locais_votacao.length > 12 && (
+                        <p className="text-sm text-[var(--text-secondary)] mt-2 text-center">
+                          ... e mais {z.locais_votacao.length - 12} locais
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -545,7 +676,7 @@ export default function Mapas() {
             <p className="text-sm text-[var(--text-secondary)]">
               O mapa de calor mostra a concentração de votos e outras métricas eleitorais nas 29 zonas eleitorais de Rondônia. 
               Cada ponto representa uma zona eleitoral, posicionada na sede do município principal da zona.
-              A intensidade das cores indica o valor da métrica selecionada - cores mais intensas representam valores mais altos.
+              Clique em uma zona para ver os detalhes, incluindo os municípios que a compõem e os locais de votação (escolas, etc.).
               <br /><br />
               <strong>Fonte dos dados:</strong> Portal de Dados Abertos do TSE - Boletins de Urna consolidados.
             </p>
