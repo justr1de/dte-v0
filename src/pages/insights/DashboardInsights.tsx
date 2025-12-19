@@ -332,10 +332,16 @@ export default function DashboardInsights() {
           </div>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={votosPorPartido} layout="vertical">
+              <BarChart data={votosPorPartido} layout="vertical" margin={{ left: 20, right: 30 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                 <XAxis type="number" stroke="var(--text-secondary)" />
-                <YAxis dataKey="sigla" type="category" stroke="var(--text-secondary)" width={60} />
+                <YAxis 
+                  dataKey="sigla" 
+                  type="category" 
+                  stroke="var(--text-secondary)" 
+                  width={80}
+                  tick={{ fontSize: 12 }}
+                />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: 'var(--bg-card)', 
@@ -362,10 +368,16 @@ export default function DashboardInsights() {
           </div>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={votosPorMunicipio} layout="vertical">
+              <BarChart data={votosPorMunicipio} layout="vertical" margin={{ left: 20, right: 30 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                 <XAxis type="number" stroke="var(--text-secondary)" />
-                <YAxis dataKey="municipio" type="category" stroke="var(--text-secondary)" width={100} />
+                <YAxis 
+                  dataKey="municipio" 
+                  type="category" 
+                  stroke="var(--text-secondary)" 
+                  width={110}
+                  tick={{ fontSize: 11 }}
+                />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: 'var(--bg-card)', 

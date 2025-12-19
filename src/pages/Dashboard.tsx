@@ -344,34 +344,37 @@ export default function Dashboard() {
                 <BarChart3 className="w-5 h-5 text-[var(--accent-color)]" />
                 <h2 className="text-lg font-semibold">Top 10 Partidos por Votos</h2>
               </div>
-              <div className="flex gap-4">
-                {/* Gráfico */}
-                <div className="flex-1 h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={votosPartido} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                      <XAxis type="number" stroke="var(--text-secondary)" tickFormatter={(v) => v.toLocaleString('pt-BR')} />
-                      <YAxis dataKey="sigla" type="category" stroke="var(--text-secondary)" width={60} />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'var(--bg-card)', 
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '8px'
-                        }}
-                        formatter={(value: number, name: string, props: any) => [
-                          value.toLocaleString('pt-BR'), 
-                          props.payload.nome
-                        ]}
-                        labelFormatter={(label) => `${label}`}
-                      />
-                      <Bar dataKey="votos" radius={[0, 4, 4, 0]}>
-                        {votosPartido.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.cor} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={votosPartido} layout="vertical" margin={{ left: 20, right: 30 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                    <XAxis type="number" stroke="var(--text-secondary)" tickFormatter={(v) => v.toLocaleString('pt-BR')} />
+                    <YAxis 
+                      dataKey="sigla" 
+                      type="category" 
+                      stroke="var(--text-secondary)" 
+                      width={80}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'var(--bg-card)', 
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: number, name: string, props: any) => [
+                        value.toLocaleString('pt-BR'), 
+                        props.payload.nome
+                      ]}
+                      labelFormatter={(label) => `${label}`}
+                    />
+                    <Bar dataKey="votos" radius={[0, 4, 4, 0]}>
+                      {votosPartido.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.cor} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
               {/* Legenda com nomes dos partidos */}
               <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
