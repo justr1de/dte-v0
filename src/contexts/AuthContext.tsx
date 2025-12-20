@@ -54,37 +54,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const fetchUserProfile = async (userId: string, email?: string | null) => {
+    // Verificar se o email está na lista de admins
+    const isAdminEmail = email && ADMIN_EMAILS.includes(email.toLowerCase())
+    
     try {
-      const { data, error } = await supabase
+      // Primeiro tenta buscar por ID
+      let { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single()
 
+      // Se não encontrou por ID, tenta buscar por email
+      if (error && email) {
+        const emailResult = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .single()
+        
+        data = emailResult.data
+        error = emailResult.error
+      }
+
       if (error) throw error
       
       // Forçar role admin para emails na lista ADMIN_EMAILS
-      if (data && email && ADMIN_EMAILS.includes(email.toLowerCase())) {
-        data.role = 'admin'
+      if (data) {
+        if (isAdminEmail) {
+          data.role = 'admin'
+        }
+        setUser(data)
       }
-      
-      setUser(data)
     } catch (error) {
       console.error('Error fetching user profile:', error)
-      // Create default user from auth data
-      const authUser = session?.user
-      if (authUser) {
-        // Verificar se o email está na lista de admins
-        const isAdminEmail = authUser.email && ADMIN_EMAILS.includes(authUser.email.toLowerCase())
-        
-        setUser({
-          id: authUser.id,
-          email: authUser.email || '',
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuário',
-          role: isAdminEmail ? 'admin' : 'candidato',
-          created_at: authUser.created_at
-        })
-      }
+      // Create default user from auth data - FORÇAR ADMIN SE EMAIL ESTIVER NA LISTA
+      setUser({
+        id: userId,
+        email: email || '',
+        name: email?.split('@')[0] || 'Usuário',
+        role: isAdminEmail ? 'admin' : 'candidato',
+        created_at: new Date().toISOString()
+      })
     } finally {
       setLoading(false)
     }
