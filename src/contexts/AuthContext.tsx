@@ -5,7 +5,8 @@ import { Session } from '@supabase/supabase-js'
 // Lista de emails que são sempre admin
 const ADMIN_EMAILS = [
   'contato@dataro-it.com.br',
-  'hugonsilva@gmail.com'
+  'hugonsilva@gmail.com',
+  'ranieri.braga@hotmail.com'
 ]
 
 interface AuthContextType {
