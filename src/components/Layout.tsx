@@ -40,7 +40,8 @@ import {
   MapPin,
   AlertTriangle,
   Trophy,
-  ThermometerSun
+  ThermometerSun,
+  School
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -72,6 +73,7 @@ export default function Layout({ children }: LayoutProps) {
         { path: '/resultados', icon: BarChart3, label: 'Resultados', roles: ['admin', 'gestor_campanha', 'candidato'] },
         { path: '/votos-nulos', icon: Vote, label: 'Votos Nulos', roles: ['admin', 'gestor_campanha', 'candidato'] },
         { path: '/mapas', icon: Map, label: 'Mapas de Calor', roles: ['admin', 'gestor_campanha', 'candidato'] },
+        { path: '/locais-votacao', icon: School, label: 'Locais de Votação', roles: ['admin', 'gestor_campanha', 'candidato'] },
       ]
     },
     {
