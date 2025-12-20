@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Verificar se é admin pelo email OU pelo role
-  const isAdminByEmail = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase())
+  const isAdminByEmail = Boolean(user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase()))
 
   const value = {
     user,
