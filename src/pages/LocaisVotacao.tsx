@@ -15,8 +15,15 @@ import {
   ChevronDown,
   ChevronUp,
   BarChart3,
-  Map
+  Hash,
+  List
 } from 'lucide-react'
+
+interface SecaoInfo {
+  nr_secao: number
+  qt_aptos: number
+  qt_comparecimento: number
+}
 
 interface LocalVotacao {
   nr_local_votacao: number
@@ -28,6 +35,7 @@ interface LocalVotacao {
   total_secoes: number
   total_eleitores: number
   participacao: number
+  secoes: SecaoInfo[]
 }
 
 interface MunicipioGroup {
@@ -35,12 +43,12 @@ interface MunicipioGroup {
   locais: LocalVotacao[]
   total_votos: number
   total_locais: number
+  total_secoes: number
 }
 
 export default function LocaisVotacao() {
   const [loading, setLoading] = useState(true)
   const [locais, setLocais] = useState<LocalVotacao[]>([])
-  const [municipiosGroup, setMunicipiosGroup] = useState<MunicipioGroup[]>([])
   const [filtroAno, setFiltroAno] = useState<number>(2024)
   const [filtroTurno, setFiltroTurno] = useState<number>(1)
   const [filtroMunicipio, setFiltroMunicipio] = useState<string>('todos')
@@ -49,9 +57,11 @@ export default function LocaisVotacao() {
   const [municipios, setMunicipios] = useState<string[]>([])
   const [zonas, setZonas] = useState<number[]>([])
   const [expandedMunicipio, setExpandedMunicipio] = useState<string | null>(null)
+  const [expandedLocal, setExpandedLocal] = useState<string | null>(null)
   const [ordenacao, setOrdenacao] = useState<'votos' | 'nome' | 'secoes'>('votos')
   const [totalVotos, setTotalVotos] = useState(0)
   const [totalLocais, setTotalLocais] = useState(0)
+  const [totalSecoes, setTotalSecoes] = useState(0)
 
   useEffect(() => {
     fetchData()
@@ -60,18 +70,36 @@ export default function LocaisVotacao() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Buscar dados agregados por local de votação
-      const { data: boletins, error } = await supabase
-        .from('boletins_urna')
-        .select('nr_local_votacao, nm_local_votacao, ds_endereco_local, nm_municipio, nr_zona, nr_secao, qt_votos, qt_aptos, qt_comparecimento')
-        .eq('ano_eleicao', filtroAno)
-        .eq('nr_turno', filtroTurno)
-        .eq('cd_cargo_pergunta', 11) // Apenas Prefeito para evitar duplicação
-        .limit(100000)
+      // Buscar dados em múltiplas páginas para pegar todos os registros
+      let allBoletins: any[] = []
+      let page = 0
+      const pageSize = 50000
+      let hasMore = true
 
-      if (error) throw error
+      while (hasMore) {
+        const { data: boletins, error } = await supabase
+          .from('boletins_urna')
+          .select('nr_local_votacao, nm_local_votacao, ds_endereco_local, nm_municipio, nr_zona, nr_secao, qt_votos, qt_aptos, qt_comparecimento, sg_uf')
+          .eq('ano_eleicao', filtroAno)
+          .eq('nr_turno', filtroTurno)
+          .eq('cd_cargo_pergunta', 11) // Apenas Prefeito para evitar duplicação
+          .eq('sg_uf', 'RO') // Apenas Rondônia
+          .range(page * pageSize, (page + 1) * pageSize - 1)
 
-      if (boletins && boletins.length > 0) {
+        if (error) throw error
+
+        if (boletins && boletins.length > 0) {
+          allBoletins = [...allBoletins, ...boletins]
+          hasMore = boletins.length === pageSize
+          page++
+        } else {
+          hasMore = false
+        }
+      }
+
+      console.log(`Total de registros carregados: ${allBoletins.length}`)
+
+      if (allBoletins.length > 0) {
         // Agregar por local de votação
         const locaisMap: Record<string, {
           nr_local_votacao: number
@@ -80,19 +108,23 @@ export default function LocaisVotacao() {
           nm_municipio: string
           nr_zona: number
           total_votos: number
-          secoes: Set<number>
+          secoes: Map<number, SecaoInfo>
           total_eleitores: number
           total_comparecimento: number
         }> = {}
 
         const municipiosSet = new Set<string>()
         const zonasSet = new Set<number>()
+        const secoesGlobal = new Set<string>()
 
-        boletins.forEach(b => {
+        allBoletins.forEach(b => {
+          if (!b.nm_municipio) return
+          
           const key = `${b.nm_municipio}-${b.nr_zona}-${b.nr_local_votacao}`
           
           municipiosSet.add(b.nm_municipio)
           zonasSet.add(b.nr_zona)
+          secoesGlobal.add(`${b.nr_zona}-${b.nr_secao}`)
           
           if (!locaisMap[key]) {
             locaisMap[key] = {
@@ -102,7 +134,7 @@ export default function LocaisVotacao() {
               nm_municipio: b.nm_municipio,
               nr_zona: b.nr_zona,
               total_votos: 0,
-              secoes: new Set(),
+              secoes: new Map(),
               total_eleitores: 0,
               total_comparecimento: 0
             }
@@ -110,9 +142,13 @@ export default function LocaisVotacao() {
           
           locaisMap[key].total_votos += b.qt_votos || 0
           
-          // Evitar duplicação de seções
+          // Agregar seções
           if (!locaisMap[key].secoes.has(b.nr_secao)) {
-            locaisMap[key].secoes.add(b.nr_secao)
+            locaisMap[key].secoes.set(b.nr_secao, {
+              nr_secao: b.nr_secao,
+              qt_aptos: b.qt_aptos || 0,
+              qt_comparecimento: b.qt_comparecimento || 0
+            })
             locaisMap[key].total_eleitores += b.qt_aptos || 0
             locaisMap[key].total_comparecimento += b.qt_comparecimento || 0
           }
@@ -125,10 +161,11 @@ export default function LocaisVotacao() {
           ds_endereco: l.ds_endereco,
           nm_municipio: l.nm_municipio,
           nr_zona: l.nr_zona,
-          total_votos: l.total_comparecimento, // Usar comparecimento como total de votos
+          total_votos: l.total_comparecimento,
           total_secoes: l.secoes.size,
           total_eleitores: l.total_eleitores,
-          participacao: l.total_eleitores > 0 ? (l.total_comparecimento / l.total_eleitores) * 100 : 0
+          participacao: l.total_eleitores > 0 ? (l.total_comparecimento / l.total_eleitores) * 100 : 0,
+          secoes: Array.from(l.secoes.values()).sort((a, b) => a.nr_secao - b.nr_secao)
         }))
 
         setLocais(locaisArray)
@@ -136,6 +173,14 @@ export default function LocaisVotacao() {
         setZonas(Array.from(zonasSet).sort((a, b) => a - b))
         setTotalVotos(locaisArray.reduce((acc, l) => acc + l.total_votos, 0))
         setTotalLocais(locaisArray.length)
+        setTotalSecoes(secoesGlobal.size)
+      } else {
+        setLocais([])
+        setMunicipios([])
+        setZonas([])
+        setTotalVotos(0)
+        setTotalLocais(0)
+        setTotalSecoes(0)
       }
     } catch (error) {
       console.error('Erro ao buscar dados:', error)
@@ -189,12 +234,14 @@ export default function LocaisVotacao() {
           nm_municipio: local.nm_municipio,
           locais: [],
           total_votos: 0,
-          total_locais: 0
+          total_locais: 0,
+          total_secoes: 0
         }
       }
       groups[local.nm_municipio].locais.push(local)
       groups[local.nm_municipio].total_votos += local.total_votos
       groups[local.nm_municipio].total_locais++
+      groups[local.nm_municipio].total_secoes += local.total_secoes
     })
     
     return Object.values(groups).sort((a, b) => b.total_votos - a.total_votos)
@@ -202,7 +249,7 @@ export default function LocaisVotacao() {
 
   const exportarCSV = () => {
     const filtered = getFilteredLocais()
-    const headers = ['Município', 'Zona', 'Nº Local', 'Nome do Local', 'Endereço', 'Seções', 'Eleitores', 'Votos', 'Participação (%)']
+    const headers = ['Município', 'Zona', 'Nº Local', 'Nome do Local', 'Endereço', 'Seções', 'Nº das Seções', 'Eleitores', 'Votos', 'Participação (%)']
     const rows = filtered.map(l => [
       l.nm_municipio,
       l.nr_zona,
@@ -210,6 +257,7 @@ export default function LocaisVotacao() {
       l.nm_local_votacao,
       l.ds_endereco,
       l.total_secoes,
+      l.secoes.map(s => s.nr_secao).join('; '),
       l.total_eleitores,
       l.total_votos,
       l.participacao.toFixed(2)
@@ -266,7 +314,7 @@ export default function LocaisVotacao() {
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="card p-4">
           <div className="flex items-center gap-2 mb-2">
             <School className="w-5 h-5 text-blue-500" />
@@ -294,6 +342,13 @@ export default function LocaisVotacao() {
             <span className="text-sm text-[var(--text-secondary)]">Zonas Eleitorais</span>
           </div>
           <p className="text-2xl font-bold">{zonas.length}</p>
+        </div>
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Hash className="w-5 h-5 text-cyan-500" />
+            <span className="text-sm text-[var(--text-secondary)]">Total de Seções</span>
+          </div>
+          <p className="text-2xl font-bold">{totalSecoes.toLocaleString('pt-BR')}</p>
         </div>
       </div>
 
@@ -396,7 +451,7 @@ export default function LocaisVotacao() {
                       <div>
                         <h3 className="font-semibold">{grupo.nm_municipio}</h3>
                         <p className="text-sm text-[var(--text-secondary)]">
-                          {grupo.total_locais} {grupo.total_locais === 1 ? 'local' : 'locais'} de votação
+                          {grupo.total_locais} {grupo.total_locais === 1 ? 'local' : 'locais'} • {grupo.total_secoes} seções
                         </p>
                       </div>
                     </div>
@@ -428,48 +483,101 @@ export default function LocaisVotacao() {
                             <th className="text-right p-3 font-semibold text-sm">Eleitores</th>
                             <th className="text-right p-3 font-semibold text-sm">Votos</th>
                             <th className="text-right p-3 font-semibold text-sm">Participação</th>
+                            <th className="text-center p-3 font-semibold text-sm">Detalhes</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {grupo.locais.map((local, idx) => (
-                            <tr 
-                              key={`${local.nr_zona}-${local.nr_local_votacao}`} 
-                              className={`border-t border-[var(--border-color)] hover:bg-[var(--bg-secondary)]/50 ${idx % 2 === 0 ? '' : 'bg-[var(--bg-primary)]/50'}`}
-                            >
-                              <td className="p-3">
-                                <div className="flex items-center gap-2">
-                                  <School className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                                  <span className="font-medium">{local.nm_local_votacao}</span>
-                                </div>
-                              </td>
-                              <td className="p-3 text-sm text-[var(--text-secondary)]">
-                                {local.ds_endereco || '-'}
-                              </td>
-                              <td className="p-3 text-center">
-                                <span className="px-2 py-1 bg-blue-500/10 text-blue-500 rounded text-sm">
-                                  {local.nr_zona}
-                                </span>
-                              </td>
-                              <td className="p-3 text-center font-medium">
-                                {local.total_secoes}
-                              </td>
-                              <td className="p-3 text-right">
-                                {local.total_eleitores.toLocaleString('pt-BR')}
-                              </td>
-                              <td className="p-3 text-right font-bold">
-                                {local.total_votos.toLocaleString('pt-BR')}
-                              </td>
-                              <td className="p-3 text-right">
-                                <span className={`px-2 py-1 rounded text-sm ${
-                                  local.participacao >= 75 ? 'bg-green-500/20 text-green-500' : 
-                                  local.participacao >= 60 ? 'bg-yellow-500/20 text-yellow-500' : 
-                                  'bg-red-500/20 text-red-500'
-                                }`}>
-                                  {local.participacao.toFixed(1)}%
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
+                          {grupo.locais.map((local, idx) => {
+                            const localKey = `${local.nr_zona}-${local.nr_local_votacao}`
+                            const isExpanded = expandedLocal === localKey
+                            
+                            return (
+                              <>
+                                <tr 
+                                  key={localKey} 
+                                  className={`border-t border-[var(--border-color)] hover:bg-[var(--bg-secondary)]/50 ${idx % 2 === 0 ? '' : 'bg-[var(--bg-primary)]/50'}`}
+                                >
+                                  <td className="p-3">
+                                    <div className="flex items-center gap-2">
+                                      <School className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                                      <div>
+                                        <span className="font-medium">{local.nm_local_votacao}</span>
+                                        <span className="text-xs text-[var(--text-secondary)] ml-2">#{local.nr_local_votacao}</span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-3 text-sm text-[var(--text-secondary)]">
+                                    {local.ds_endereco || '-'}
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className="px-2 py-1 bg-blue-500/10 text-blue-500 rounded text-sm">
+                                      {local.nr_zona}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-center font-medium">
+                                    {local.total_secoes}
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    {local.total_eleitores.toLocaleString('pt-BR')}
+                                  </td>
+                                  <td className="p-3 text-right font-bold">
+                                    {local.total_votos.toLocaleString('pt-BR')}
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    <span className={`px-2 py-1 rounded text-sm ${
+                                      local.participacao >= 75 ? 'bg-green-500/20 text-green-500' : 
+                                      local.participacao >= 60 ? 'bg-yellow-500/20 text-yellow-500' : 
+                                      'bg-red-500/20 text-red-500'
+                                    }`}>
+                                      {local.participacao.toFixed(1)}%
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setExpandedLocal(isExpanded ? null : localKey)
+                                      }}
+                                      className="p-1 rounded hover:bg-[var(--bg-secondary)]"
+                                    >
+                                      <List className="w-4 h-4 text-[var(--accent-color)]" />
+                                    </button>
+                                  </td>
+                                </tr>
+                                {/* Detalhes das Seções */}
+                                {isExpanded && (
+                                  <tr>
+                                    <td colSpan={8} className="p-0">
+                                      <div className="bg-[var(--bg-primary)] p-4 border-t border-[var(--border-color)]">
+                                        <div className="flex items-center gap-2 mb-3">
+                                          <Hash className="w-4 h-4 text-[var(--accent-color)]" />
+                                          <span className="font-semibold text-sm">Seções Eleitorais ({local.secoes.length})</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                                          {local.secoes.map(secao => (
+                                            <div 
+                                              key={secao.nr_secao}
+                                              className="p-2 bg-[var(--bg-secondary)] rounded border border-[var(--border-color)]"
+                                            >
+                                              <div className="flex items-center justify-between">
+                                                <span className="font-bold text-[var(--accent-color)]">
+                                                  Seção {secao.nr_secao}
+                                                </span>
+                                              </div>
+                                              <div className="text-xs text-[var(--text-secondary)] mt-1">
+                                                <div>Eleitores: {secao.qt_aptos.toLocaleString('pt-BR')}</div>
+                                                <div>Comparecimento: {secao.qt_comparecimento.toLocaleString('pt-BR')}</div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </>
+                            )
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -503,6 +611,12 @@ export default function LocaisVotacao() {
                 <p className="text-sm text-[var(--text-secondary)]">
                   {local.nm_municipio} • Zona {local.nr_zona} • {local.total_secoes} seções
                 </p>
+                {local.ds_endereco && (
+                  <p className="text-xs text-[var(--text-secondary)] truncate">
+                    <MapPin className="w-3 h-3 inline mr-1" />
+                    {local.ds_endereco}
+                  </p>
+                )}
               </div>
               <div className="text-right">
                 <p className="font-bold text-lg">{local.total_votos.toLocaleString('pt-BR')}</p>
