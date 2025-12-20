@@ -82,7 +82,7 @@ export default function LocaisVotacao() {
           .select('nr_local_votacao, nm_local_votacao, ds_endereco_local, nm_municipio, nr_zona, nr_secao, qt_votos, qt_aptos, qt_comparecimento, sg_uf')
           .eq('ano_eleicao', filtroAno)
           .eq('nr_turno', filtroTurno)
-          .eq('cd_cargo_pergunta', 11) // Apenas Prefeito para evitar duplicação
+          .eq('cd_cargo_pergunta', 13) // Vereador - cargo com dados mais completos
           .eq('sg_uf', 'RO') // Apenas Rondônia
           .range(page * pageSize, (page + 1) * pageSize - 1)
 
