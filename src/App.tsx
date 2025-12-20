@@ -13,6 +13,7 @@ import VotosNulos from './pages/VotosNulos'
 import Mapas from './pages/Mapas'
 import LocaisVotacao from './pages/LocaisVotacao'
 import ComparativoHistorico from './pages/ComparativoHistorico'
+import DocumentacaoZonas from './pages/DocumentacaoZonas'
 import MapasCalor from './pages/MapasCalor'
 import MapaInterativo from './pages/MapaInterativo'
 import MapaCalorGoogle from './pages/MapaCalorGoogle'
@@ -107,6 +108,7 @@ export default function App() {
       <Route path="/mapas" element={<ProtectedRoute><Mapas /></ProtectedRoute>} />
       <Route path="/locais-votacao" element={<ProtectedRoute><LocaisVotacao /></ProtectedRoute>} />
       <Route path="/comparativo-historico" element={<ProtectedRoute><ComparativoHistorico /></ProtectedRoute>} />
+      <Route path="/documentacao-zonas" element={<ProtectedRoute><DocumentacaoZonas /></ProtectedRoute>} />
       <Route path="/mapas-calor" element={<ProtectedRoute><MapasCalor /></ProtectedRoute>} />
       <Route path="/mapa-interativo" element={<ProtectedRoute><MapaInterativo /></ProtectedRoute>} />
       <Route path="/mapa-calor-google" element={<ProtectedRoute><MapaCalorGoogle /></ProtectedRoute>} />

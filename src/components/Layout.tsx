@@ -106,6 +106,7 @@ export default function Layout({ children }: LayoutProps) {
       title: 'Sistema',
       items: [
         { path: '/relatorios', icon: FileText, label: 'Relatórios', roles: ['admin', 'gestor_campanha', 'candidato'] },
+        { path: '/documentacao-zonas', icon: MapPin, label: 'Documentação Zonas', roles: ['admin', 'gestor_campanha', 'candidato'] },
         { path: '/importar', icon: Upload, label: 'Importar Dados', roles: ['admin'] },
         { path: '/configuracoes', icon: Settings, label: 'Configurações', roles: ['admin'] },
       ]
