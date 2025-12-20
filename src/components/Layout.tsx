@@ -170,8 +170,10 @@ export default function Layout({ children }: LayoutProps) {
           {/* Menu Items */}
           <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
             {menuSections.map((section) => {
+              // Se for admin, mostra todos os itens; caso contrário, filtra por role
+              const effectiveRole = isAdmin ? 'admin' : (user?.role || 'candidato')
               const sectionItems = section.items.filter(item => 
-                item.roles.includes(user?.role || 'candidato')
+                item.roles.includes(effectiveRole)
               )
               if (sectionItems.length === 0) return null
               return (
