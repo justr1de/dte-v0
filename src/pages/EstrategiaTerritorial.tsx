@@ -120,6 +120,12 @@ export default function EstrategiaTerritorial() {
   const [metaEditando, setMetaEditando] = useState<MetaZona | null>(null)
   const [expandedZonas, setExpandedZonas] = useState<Set<number>>(new Set())
   
+  // Edição inline
+  const [editandoInline, setEditandoInline] = useState<number | null>(null)
+  const [valoresEditando, setValoresEditando] = useState<Partial<MetaZona>>({})
+  const [salvando, setSalvando] = useState(false)
+  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null)
+  
   // Abas
   const [abaAtiva, setAbaAtiva] = useState<'zonas' | 'bairros' | 'historico' | 'dashboard'>('dashboard')
 
@@ -399,6 +405,107 @@ export default function EstrategiaTerritorial() {
     })
   }
 
+  // Funções de edição inline
+  const iniciarEdicaoInline = (meta: MetaZona) => {
+    setEditandoInline(meta.zona)
+    setValoresEditando({
+      metaVotos: meta.metaVotos,
+      metaPercentual: meta.metaPercentual,
+      prioridade: meta.prioridade,
+      status: meta.status,
+      progresso: meta.progresso,
+      responsavel: meta.responsavel,
+      estrategia: meta.estrategia,
+      observacoes: meta.observacoes
+    })
+  }
+
+  const cancelarEdicaoInline = () => {
+    setEditandoInline(null)
+    setValoresEditando({})
+  }
+
+  const salvarEdicaoInline = async (meta: MetaZona) => {
+    setSalvando(true)
+    try {
+      const metaAtualizada = {
+        ...meta,
+        ...valoresEditando
+      }
+
+      // Verificar se já existe no banco
+      if (meta.id) {
+        // Atualizar meta existente
+        const { error } = await supabase
+          .from('metas_territoriais')
+          .update({
+            meta_votos: metaAtualizada.metaVotos,
+            meta_percentual: metaAtualizada.metaPercentual,
+            prioridade: metaAtualizada.prioridade,
+            estrategia: metaAtualizada.estrategia,
+            responsavel: metaAtualizada.responsavel,
+            status: metaAtualizada.status,
+            progresso: metaAtualizada.progresso,
+            observacoes: metaAtualizada.observacoes,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', meta.id)
+
+        if (error) throw error
+      } else {
+        // Criar nova meta no banco
+        const { data, error } = await supabase
+          .from('metas_territoriais')
+          .insert({
+            zona: meta.zona,
+            municipio: meta.municipio,
+            meta_votos: metaAtualizada.metaVotos,
+            meta_percentual: metaAtualizada.metaPercentual,
+            votos_anteriores: meta.votosAnteriores,
+            total_eleitores: meta.totalEleitores,
+            prioridade: metaAtualizada.prioridade,
+            estrategia: metaAtualizada.estrategia,
+            responsavel: metaAtualizada.responsavel,
+            status: metaAtualizada.status,
+            progresso: metaAtualizada.progresso,
+            observacoes: metaAtualizada.observacoes
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+        
+        // Atualizar o ID local com o ID do banco
+        if (data) {
+          metaAtualizada.id = data.id
+        }
+      }
+
+      // Atualizar estado local
+      setMetas(prev => prev.map(m => m.zona === meta.zona ? metaAtualizada as MetaZona : m))
+      
+      setMensagemSucesso(`Meta da Zona ${meta.zona} salva com sucesso!`)
+      setTimeout(() => setMensagemSucesso(null), 3000)
+      
+      setEditandoInline(null)
+      setValoresEditando({})
+    } catch (error) {
+      console.error('Erro ao salvar meta:', error)
+      // Salvar localmente mesmo se falhar no banco
+      setMetas(prev => prev.map(m => m.zona === meta.zona ? { ...m, ...valoresEditando } as MetaZona : m))
+      setMensagemSucesso(`Meta salva localmente (erro de conexão)`)
+      setTimeout(() => setMensagemSucesso(null), 3000)
+      setEditandoInline(null)
+      setValoresEditando({})
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  const atualizarCampoInline = (campo: keyof MetaZona, valor: any) => {
+    setValoresEditando(prev => ({ ...prev, [campo]: valor }))
+  }
+
   // Filtrar metas
   const metasFiltradas = metas.filter(m => {
     if (filtroZona && m.zona !== filtroZona) return false
@@ -445,6 +552,14 @@ export default function EstrategiaTerritorial() {
             Defina e acompanhe metas de votos por zona eleitoral e bairro
           </p>
         </div>
+
+        {/* Mensagem de sucesso */}
+        {mensagemSucesso && (
+          <div className="fixed top-4 right-4 z-50 bg-emerald-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+            <CheckCircle className="w-5 h-5" />
+            {mensagemSucesso}
+          </div>
+        )}
 
         <div className="flex gap-2">
           <button
@@ -874,46 +989,193 @@ export default function EstrategiaTerritorial() {
                       </div>
                     </div>
 
-                    {/* Detalhes expandidos */}
+                    {/* Detalhes expandidos com edição inline */}
                     {expandedZonas.has(meta.zona) && (
                       <div className="px-4 pb-4 border-t border-[var(--border-color)]">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                          <div>
-                            <p className="text-sm font-medium text-[var(--text-muted)]">Estratégia</p>
-                            <p className="mt-1">{meta.estrategia || 'Não definida'}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-[var(--text-muted)]">Responsável</p>
-                            <p className="mt-1">{meta.responsavel || 'Não atribuído'}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-[var(--text-muted)]">Observações</p>
-                            <p className="mt-1">{meta.observacoes || 'Nenhuma'}</p>
-                          </div>
-                        </div>
-                        <div className="mt-4 p-3 bg-[var(--bg-card)] rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Percent className="w-4 h-4 text-blue-500" />
-                              <span className="text-sm">Meta representa {meta.metaPercentual}% do eleitorado</span>
+                        {editandoInline === meta.zona ? (
+                          /* Modo de edição inline */
+                          <div className="mt-4 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Meta de Votos</label>
+                                <input
+                                  type="number"
+                                  value={valoresEditando.metaVotos || 0}
+                                  onChange={(e) => atualizarCampoInline('metaVotos', parseInt(e.target.value) || 0)}
+                                  className="input w-full"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Meta % do Eleitorado</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={valoresEditando.metaPercentual || 0}
+                                  onChange={(e) => atualizarCampoInline('metaPercentual', parseFloat(e.target.value) || 0)}
+                                  className="input w-full"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Prioridade</label>
+                                <select
+                                  value={valoresEditando.prioridade || 'media'}
+                                  onChange={(e) => atualizarCampoInline('prioridade', e.target.value)}
+                                  className="input w-full"
+                                >
+                                  <option value="alta">Alta</option>
+                                  <option value="media">Média</option>
+                                  <option value="baixa">Baixa</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Status</label>
+                                <select
+                                  value={valoresEditando.status || 'pendente'}
+                                  onChange={(e) => atualizarCampoInline('status', e.target.value)}
+                                  className="input w-full"
+                                >
+                                  <option value="pendente">Pendente</option>
+                                  <option value="em_andamento">Em Andamento</option>
+                                  <option value="concluida">Concluída</option>
+                                </select>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {meta.metaVotos > meta.votosAnteriores ? (
-                                <>
-                                  <TrendingUp className="w-4 h-4 text-amber-500" />
-                                  <span className="text-sm text-amber-500">
-                                    +{((meta.metaVotos - meta.votosAnteriores) / meta.votosAnteriores * 100).toFixed(1)}% de crescimento necessário
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle className="w-4 h-4 text-emerald-500" />
-                                  <span className="text-sm text-emerald-500">Meta conservadora</span>
-                                </>
-                              )}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Progresso (%)</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={valoresEditando.progresso || 0}
+                                  onChange={(e) => atualizarCampoInline('progresso', Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                                  className="input w-full"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Responsável</label>
+                                <input
+                                  type="text"
+                                  value={valoresEditando.responsavel || ''}
+                                  onChange={(e) => atualizarCampoInline('responsavel', e.target.value)}
+                                  className="input w-full"
+                                  placeholder="Nome do responsável"
+                                />
+                              </div>
+                              <div className="flex items-end">
+                                <div className="w-full bg-gray-200 rounded-full h-3">
+                                  <div 
+                                    className="h-3 rounded-full transition-all bg-emerald-500"
+                                    style={{ width: `${valoresEditando.progresso || 0}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Estratégia</label>
+                              <textarea
+                                value={valoresEditando.estrategia || ''}
+                                onChange={(e) => atualizarCampoInline('estrategia', e.target.value)}
+                                className="input w-full h-20"
+                                placeholder="Descreva a estratégia para atingir a meta nesta zona..."
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Observações</label>
+                              <textarea
+                                value={valoresEditando.observacoes || ''}
+                                onChange={(e) => atualizarCampoInline('observacoes', e.target.value)}
+                                className="input w-full h-16"
+                                placeholder="Observações adicionais..."
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  cancelarEdicaoInline()
+                                }}
+                                className="btn-secondary px-4 py-2"
+                                disabled={salvando}
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  salvarEdicaoInline(meta)
+                                }}
+                                className="btn-primary px-4 py-2 flex items-center gap-2"
+                                disabled={salvando}
+                              >
+                                {salvando ? (
+                                  <>
+                                    <RefreshCw className="w-4 h-4 animate-spin" />
+                                    Salvando...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Save className="w-4 h-4" />
+                                    Salvar no Supabase
+                                  </>
+                                )}
+                              </button>
                             </div>
                           </div>
-                        </div>
+                        ) : (
+                          /* Modo de visualização */
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                              <div>
+                                <p className="text-sm font-medium text-[var(--text-muted)]">Estratégia</p>
+                                <p className="mt-1">{meta.estrategia || 'Não definida'}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-[var(--text-muted)]">Responsável</p>
+                                <p className="mt-1">{meta.responsavel || 'Não atribuído'}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-[var(--text-muted)]">Observações</p>
+                                <p className="mt-1">{meta.observacoes || 'Nenhuma'}</p>
+                              </div>
+                            </div>
+                            <div className="mt-4 p-3 bg-[var(--bg-card)] rounded-lg">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Percent className="w-4 h-4 text-blue-500" />
+                                  <span className="text-sm">Meta representa {meta.metaPercentual}% do eleitorado</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {meta.metaVotos > meta.votosAnteriores ? (
+                                    <>
+                                      <TrendingUp className="w-4 h-4 text-amber-500" />
+                                      <span className="text-sm text-amber-500">
+                                        +{((meta.metaVotos - meta.votosAnteriores) / meta.votosAnteriores * 100).toFixed(1)}% de crescimento necessário
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                      <span className="text-sm text-emerald-500">Meta conservadora</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-4 flex justify-end">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  iniciarEdicaoInline(meta)
+                                }}
+                                className="btn-primary px-4 py-2 flex items-center gap-2"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                                Editar Meta
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
