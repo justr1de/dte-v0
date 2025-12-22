@@ -180,20 +180,21 @@ export default function Dashboard() {
 
       const participacao = totalAptos > 0 ? (totalComparecimento / totalAptos) * 100 : 0
 
-      // Buscar votos totais
-      const { data: votosData } = await supabase
-        .from('boletins_urna')
-        .select('qt_votos')
-        .eq('ano_eleicao', filtroAno)
-        .eq('nr_turno', filtroTurno)
-        .eq('sg_uf', 'RO')
-        .limit(50000)
+      // Buscar votos totais usando função RPC que já agrega os dados corretamente
+      const { data: mapaData } = await supabase.rpc('get_mapa_eleitoral', {
+        p_ano: filtroAno,
+        p_turno: filtroTurno
+      })
 
       let totalVotos = 0
-      if (votosData) {
-        votosData.forEach((v: any) => {
-          totalVotos += v.qt_votos || 0
+      if (mapaData && mapaData.length > 0) {
+        mapaData.forEach((m: any) => {
+          totalVotos += Number(m.total_votos) || 0
         })
+        // Também atualizar municípios se tiver dados
+        if (municipiosSet.size === 0) {
+          mapaData.forEach((m: any) => municipiosSet.add(m.nm_municipio))
+        }
       }
 
       setStats({
