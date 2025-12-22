@@ -21,7 +21,10 @@ import {
   ChevronUp,
   Filter,
   Calendar,
-  Flag
+  Flag,
+  Upload,
+  FileSpreadsheet,
+  X
 } from 'lucide-react'
 import {
   BarChart,
@@ -125,6 +128,13 @@ export default function EstrategiaTerritorial() {
   const [valoresEditando, setValoresEditando] = useState<Partial<MetaZona>>({})
   const [salvando, setSalvando] = useState(false)
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null)
+  
+  // Importação de CSV
+  const [modalImportacao, setModalImportacao] = useState(false)
+  const [arquivoCSV, setArquivoCSV] = useState<File | null>(null)
+  const [previewImportacao, setPreviewImportacao] = useState<MetaZona[]>([])
+  const [importando, setImportando] = useState(false)
+  const [erroImportacao, setErroImportacao] = useState<string | null>(null)
   
   // Abas
   const [abaAtiva, setAbaAtiva] = useState<'zonas' | 'bairros' | 'historico' | 'dashboard'>('dashboard')
@@ -441,6 +451,112 @@ export default function EstrategiaTerritorial() {
     link.click()
   }
 
+  // Funções de importação de CSV
+  const processarCSV = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string
+        const lines = text.split('\n').filter(line => line.trim())
+        
+        // Pular cabeçalho
+        const dataLines = lines.slice(1)
+        
+        const metasImportadas: MetaZona[] = dataLines.map((line, index) => {
+          const cols = line.split(',').map(col => col.trim().replace(/^"|"$/g, ''))
+          
+          return {
+            zona: parseInt(cols[0]) || index + 1,
+            municipio: cols[1] || 'Porto Velho',
+            metaVotos: parseInt(cols[2]) || 0,
+            metaPercentual: parseFloat(cols[3]) || 0,
+            votosAnteriores: parseInt(cols[4]) || 0,
+            totalEleitores: parseInt(cols[5]) || 0,
+            prioridade: (['alta', 'media', 'baixa'].includes(cols[6]?.toLowerCase()) ? cols[6].toLowerCase() : 'media') as 'alta' | 'media' | 'baixa',
+            status: (['pendente', 'em_andamento', 'concluida'].includes(cols[7]?.toLowerCase()) ? cols[7].toLowerCase() : 'pendente') as 'pendente' | 'em_andamento' | 'concluida',
+            progresso: parseInt(cols[8]) || 0,
+            responsavel: cols[9] || '',
+            estrategia: cols[10] || '',
+            observacoes: cols[11] || ''
+          }
+        }).filter(m => m.zona > 0)
+        
+        setPreviewImportacao(metasImportadas)
+        setErroImportacao(null)
+      } catch (error) {
+        setErroImportacao('Erro ao processar arquivo CSV. Verifique o formato.')
+        setPreviewImportacao([])
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setArquivoCSV(file)
+      processarCSV(file)
+    }
+  }
+
+  const importarMetas = async () => {
+    if (previewImportacao.length === 0) return
+    
+    setImportando(true)
+    try {
+      // Salvar cada meta no Supabase
+      for (const meta of previewImportacao) {
+        const { error } = await supabase
+          .from('metas_territoriais')
+          .upsert({
+            zona: meta.zona,
+            municipio: meta.municipio,
+            meta_votos: meta.metaVotos,
+            meta_percentual: meta.metaPercentual,
+            votos_anteriores: meta.votosAnteriores,
+            total_eleitores: meta.totalEleitores,
+            prioridade: meta.prioridade,
+            estrategia: meta.estrategia,
+            responsavel: meta.responsavel,
+            status: meta.status,
+            progresso: meta.progresso,
+            observacoes: meta.observacoes
+          }, { onConflict: 'zona' })
+        
+        if (error) console.error('Erro ao importar zona', meta.zona, error)
+      }
+      
+      // Recarregar dados
+      await fetchData()
+      
+      setMensagemSucesso(`${previewImportacao.length} metas importadas com sucesso!`)
+      setTimeout(() => setMensagemSucesso(null), 3000)
+      
+      // Fechar modal e limpar
+      setModalImportacao(false)
+      setArquivoCSV(null)
+      setPreviewImportacao([])
+    } catch (error) {
+      setErroImportacao('Erro ao salvar metas no banco de dados.')
+    } finally {
+      setImportando(false)
+    }
+  }
+
+  const baixarModeloCSV = () => {
+    const modelo = [
+      'Zona,Município,Meta Votos,Meta %,Votos Anteriores,Total Eleitores,Prioridade,Status,Progresso %,Responsável,Estratégia,Observações',
+      '1,Porto Velho,5000,3,3500,150000,alta,pendente,0,João Silva,Visitas domiciliares,Zona prioritária',
+      '2,Porto Velho,3000,2.5,2000,120000,media,pendente,0,Maria Santos,Eventos comunitários,'
+    ].join('\n')
+    
+    const blob = new Blob([modelo], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = 'modelo_metas_territoriais.csv'
+    link.click()
+  }
+
   const toggleZonaExpanded = (zona: number) => {
     setExpandedZonas(prev => {
       const newSet = new Set(prev)
@@ -639,6 +755,13 @@ export default function EstrategiaTerritorial() {
           >
             <Download className="w-4 h-4" />
             Exportar
+          </button>
+          <button
+            onClick={() => setModalImportacao(true)}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            Importar
           </button>
           <button
             onClick={fetchData}
@@ -1508,6 +1631,171 @@ export default function EstrategiaTerritorial() {
               >
                 <Save className="w-4 h-4" />
                 Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Importação de CSV */}
+      {modalImportacao && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--bg-card)] rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-[var(--border-color)] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileSpreadsheet className="w-6 h-6 text-emerald-500" />
+                <h2 className="text-xl font-bold">Importar Metas via CSV</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setModalImportacao(false)
+                  setArquivoCSV(null)
+                  setPreviewImportacao([])
+                  setErroImportacao(null)
+                }}
+                className="p-2 hover:bg-[var(--bg-card-hover)] rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Instruções */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-700 dark:text-blue-300 mb-2">Instruções</h3>
+                <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1">
+                  <li>• O arquivo deve estar no formato CSV (separado por vírgulas)</li>
+                  <li>• A primeira linha deve conter os cabeçalhos das colunas</li>
+                  <li>• Colunas: Zona, Município, Meta Votos, Meta %, Votos Anteriores, Total Eleitores, Prioridade, Status, Progresso %, Responsável, Estratégia, Observações</li>
+                  <li>• Prioridade: alta, media, baixa</li>
+                  <li>• Status: pendente, em_andamento, concluida</li>
+                </ul>
+                <button
+                  onClick={baixarModeloCSV}
+                  className="mt-3 text-sm text-blue-700 dark:text-blue-300 underline hover:no-underline flex items-center gap-1"
+                >
+                  <Download className="w-4 h-4" />
+                  Baixar modelo de CSV
+                </button>
+              </div>
+
+              {/* Upload de arquivo */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Selecionar arquivo CSV</label>
+                <div className="border-2 border-dashed border-[var(--border-color)] rounded-lg p-8 text-center hover:border-emerald-500 transition-colors">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="csv-upload"
+                  />
+                  <label htmlFor="csv-upload" className="cursor-pointer">
+                    <Upload className="w-12 h-12 mx-auto text-[var(--text-muted)] mb-3" />
+                    <p className="text-[var(--text-muted)]">
+                      {arquivoCSV ? arquivoCSV.name : 'Clique para selecionar ou arraste o arquivo CSV'}
+                    </p>
+                  </label>
+                </div>
+              </div>
+
+              {/* Erro */}
+              {erroImportacao && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                  <p className="text-red-600 dark:text-red-400">{erroImportacao}</p>
+                </div>
+              )}
+
+              {/* Preview */}
+              {previewImportacao.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-3">Preview ({previewImportacao.length} metas)</h3>
+                  <div className="border border-[var(--border-color)] rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto max-h-64">
+                      <table className="w-full text-sm">
+                        <thead className="bg-[var(--bg-card)] sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 text-left">Zona</th>
+                            <th className="px-3 py-2 text-left">Município</th>
+                            <th className="px-3 py-2 text-right">Meta Votos</th>
+                            <th className="px-3 py-2 text-center">Prioridade</th>
+                            <th className="px-3 py-2 text-center">Status</th>
+                            <th className="px-3 py-2 text-left">Responsável</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {previewImportacao.slice(0, 10).map((meta, index) => (
+                            <tr key={index} className="border-t border-[var(--border-color)]">
+                              <td className="px-3 py-2 font-medium">Zona {meta.zona}</td>
+                              <td className="px-3 py-2">{meta.municipio}</td>
+                              <td className="px-3 py-2 text-right">{meta.metaVotos.toLocaleString()}</td>
+                              <td className="px-3 py-2 text-center">
+                                <span 
+                                  className="px-2 py-0.5 text-xs rounded-full"
+                                  style={{ 
+                                    backgroundColor: `${CORES_PRIORIDADE[meta.prioridade]}20`,
+                                    color: CORES_PRIORIDADE[meta.prioridade]
+                                  }}
+                                >
+                                  {meta.prioridade}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <span 
+                                  className="px-2 py-0.5 text-xs rounded-full"
+                                  style={{ 
+                                    backgroundColor: `${CORES_STATUS[meta.status]}20`,
+                                    color: CORES_STATUS[meta.status]
+                                  }}
+                                >
+                                  {meta.status}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2">{meta.responsavel || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {previewImportacao.length > 10 && (
+                      <div className="px-3 py-2 bg-[var(--bg-card)] text-sm text-[var(--text-muted)] border-t border-[var(--border-color)]">
+                        ... e mais {previewImportacao.length - 10} metas
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-[var(--border-color)] flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setModalImportacao(false)
+                  setArquivoCSV(null)
+                  setPreviewImportacao([])
+                  setErroImportacao(null)
+                }}
+                className="btn-secondary"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={importarMetas}
+                disabled={previewImportacao.length === 0 || importando}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {importando ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Importando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    Importar {previewImportacao.length} Metas
+                  </>
+                )}
               </button>
             </div>
           </div>
