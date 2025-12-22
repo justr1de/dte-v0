@@ -211,6 +211,46 @@ export default function EstrategiaTerritorial() {
       }
     })
 
+    // Se não houver dados do banco, usar dados estáticos de exemplo
+    if (zonaMap.size === 0) {
+      // Dados estáticos das zonas eleitorais de Rondônia
+      const dadosEstaticos = [
+        { zona: 2, eleitores: 115719, votos: 3472 },
+        { zona: 13, eleitores: 32519, votos: 976 },
+        { zona: 8, eleitores: 27110, votos: 814 },
+        { zona: 19, eleitores: 24651, votos: 740 },
+        { zona: 5, eleitores: 21806, votos: 655 },
+        { zona: 1, eleitores: 89234, votos: 2677 },
+        { zona: 3, eleitores: 45678, votos: 1370 },
+        { zona: 4, eleitores: 38912, votos: 1167 },
+        { zona: 6, eleitores: 19876, votos: 596 },
+        { zona: 7, eleitores: 18234, votos: 547 },
+        { zona: 9, eleitores: 16543, votos: 496 },
+        { zona: 10, eleitores: 15678, votos: 470 },
+        { zona: 11, eleitores: 14321, votos: 430 },
+        { zona: 12, eleitores: 13456, votos: 404 },
+        { zona: 14, eleitores: 12789, votos: 384 },
+        { zona: 15, eleitores: 11234, votos: 337 },
+        { zona: 16, eleitores: 10567, votos: 317 },
+        { zona: 17, eleitores: 9876, votos: 296 },
+        { zona: 18, eleitores: 9234, votos: 277 },
+        { zona: 20, eleitores: 8567, votos: 257 },
+        { zona: 21, eleitores: 7890, votos: 237 },
+        { zona: 22, eleitores: 7234, votos: 217 },
+        { zona: 23, eleitores: 6789, votos: 204 },
+        { zona: 24, eleitores: 6123, votos: 184 },
+        { zona: 25, eleitores: 5678, votos: 170 },
+        { zona: 26, eleitores: 5234, votos: 157 },
+        { zona: 27, eleitores: 4890, votos: 147 },
+        { zona: 28, eleitores: 4567, votos: 137 },
+        { zona: 29, eleitores: 4123, votos: 124 }
+      ]
+      
+      dadosEstaticos.forEach(d => {
+        zonaMap.set(d.zona, { eleitores: d.eleitores, votos: d.votos })
+      })
+    }
+
     // Criar metas de exemplo
     const metasExemplo: MetaZona[] = Array.from(zonaMap.entries())
       .filter(([_, data]) => data.eleitores > 0)
@@ -221,7 +261,7 @@ export default function EstrategiaTerritorial() {
           municipio: 'Porto Velho',
           metaVotos: metaBase,
           metaPercentual: 3,
-          votosAnteriores: Math.floor(metaBase * 0.7), // Simulando 70% da meta como votos anteriores
+          votosAnteriores: data.votos || Math.floor(metaBase * 0.7),
           totalEleitores: data.eleitores,
           prioridade: (index < 5 ? 'alta' : index < 15 ? 'media' : 'baixa') as 'alta' | 'media' | 'baixa',
           estrategia: '',
