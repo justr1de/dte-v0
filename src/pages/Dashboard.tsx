@@ -251,37 +251,37 @@ export default function Dashboard() {
         .slice(0, 21) // Top 21 vereadores
 
       // ========== PREFEITO 2024 (1º Turno) ==========
-      // Tentar usar view pré-agregada com município, senão usar view simples
-      let prefeito2024: Candidato[] = []
-      try {
-        const { data: prefData, error: prefError } = await supabase
-          .from('votos_prefeitos_2024_detalhado')
-          .select('nm_votavel, nm_municipio, nm_partido, total_votos')
-          .limit(50)
+      // Usando view simples para performance
+      const { data: prefData } = await supabase
+        .from('votos_prefeitos_2024')
+        .select('nm_votavel, total_votos')
+        .limit(50)
 
-        if (prefError || !prefData || prefData.length === 0) {
-          // Fallback para view simples
-          const { data: prefDataSimples } = await supabase
-            .from('votos_prefeitos_2024')
-            .select('nm_votavel, total_votos')
-            .limit(50)
-          
-          prefeito2024 = (prefDataSimples || [])
-            .map((v: any) => ({ nome: v.nm_votavel, votos: v.total_votos }))
-            .slice(0, 10)
-        } else {
-          prefeito2024 = (prefData || [])
-            .map((v: any) => ({ 
-              nome: v.nm_votavel, 
-              votos: v.total_votos, 
-              municipio: v.nm_municipio,
-              partido: v.nm_partido
-            }))
-            .slice(0, 10)
-        }
-      } catch (e) {
-        console.error('Erro ao buscar prefeitos:', e)
+      // Mapeamento manual de prefeitos para municípios (dados conhecidos)
+      const municipiosPorPrefeito: Record<string, { municipio: string, partido: string }> = {
+        'MARIANA CARVALHO': { municipio: 'Porto Velho', partido: 'União Brasil' },
+        'LÉO': { municipio: 'Porto Velho', partido: 'Podemos' },
+        'ADAILTON FÚRIA': { municipio: 'Cacoal', partido: 'PSD' },
+        'AFFONSO CÂNDIDO': { municipio: 'Ji-Paraná', partido: 'PL' },
+        'DELEGADO FLORI': { municipio: 'Vilhena', partido: 'Podemos' },
+        'CÉLIO LOPES': { municipio: 'Ariquemes', partido: 'União Brasil' },
+        'CARLA REDANO': { municipio: 'Ariquemes', partido: 'MDB' },
+        'JUÍZA EUMA TOURINHO': { municipio: 'Rolim de Moura', partido: 'MDB' },
+        'MARLEI MEZZOMO': { municipio: 'Rolim de Moura', partido: 'PP' },
+        'ISAU FONSECA': { municipio: 'Guajará-Mirim', partido: 'MDB' }
       }
+
+      const prefeito2024 = (prefData || [])
+        .map((v: any) => {
+          const info = municipiosPorPrefeito[v.nm_votavel] || {}
+          return { 
+            nome: v.nm_votavel, 
+            votos: v.total_votos,
+            municipio: info.municipio || '',
+            partido: info.partido || ''
+          }
+        })
+        .slice(0, 10)
 
       setDadosCargo({
         governador2022,
