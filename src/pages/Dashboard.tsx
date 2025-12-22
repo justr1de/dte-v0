@@ -212,6 +212,7 @@ export default function Dashboard() {
         .eq('ano_eleicao', 2022)
         .eq('nr_turno', 2) // 2º turno - resultado final
         .eq('sg_uf', 'RO')
+        .limit(50000) // Garantir que todos os registros sejam retornados
 
       const govMap = new Map<string, number>()
       if (govData) {
@@ -235,6 +236,7 @@ export default function Dashboard() {
         .eq('ano_eleicao', 2022)
         .eq('nr_turno', 1) // Deputados só têm 1º turno
         .eq('sg_uf', 'RO')
+        .limit(100000) // Garantir que todos os registros sejam retornados
 
       const depFedMap = new Map<string, number>()
       if (depFedData) {
@@ -257,6 +259,7 @@ export default function Dashboard() {
         .eq('ano_eleicao', 2022)
         .eq('nr_turno', 1) // Deputados só têm 1º turno
         .eq('sg_uf', 'RO')
+        .limit(100000) // Garantir que todos os registros sejam retornados
 
       const depEstMap = new Map<string, number>()
       if (depEstData) {
@@ -279,6 +282,7 @@ export default function Dashboard() {
         .eq('ano_eleicao', 2024)
         .eq('nr_turno', 1) // Vereadores só têm 1º turno
         .eq('sg_uf', 'RO')
+        .limit(100000) // Garantir que todos os registros sejam retornados
 
       const verMap = new Map<string, number>()
       if (verData) {
@@ -301,6 +305,7 @@ export default function Dashboard() {
         .eq('ano_eleicao', 2024)
         .eq('nr_turno', 1) // 1º turno
         .eq('sg_uf', 'RO')
+        .limit(100000) // Garantir que todos os registros sejam retornados
 
       const prefMap = new Map<string, number>()
       if (prefData) {
