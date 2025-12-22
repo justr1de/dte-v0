@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
   Target,
@@ -167,9 +167,6 @@ export default function EstrategiaTerritorial() {
 
       // Buscar dados históricos
       await carregarHistorico()
-      
-      // Calcular resumo
-      calcularResumo()
     } catch (error) {
       console.error('Erro ao buscar dados:', error)
       await carregarDadosExemplo()
@@ -311,17 +308,30 @@ export default function EstrategiaTerritorial() {
     setHistorico(historicoData)
   }
 
-  const calcularResumo = () => {
-    if (metas.length === 0) return
+  const calcularResumo = useCallback((metasData: MetaZona[]) => {
+    if (metasData.length === 0) {
+      // Definir resumo padrão mesmo sem dados
+      setResumo({
+        totalMetas: 0,
+        metaGeral: 0,
+        progressoGeral: 0,
+        zonasAlta: 0,
+        zonasMedia: 0,
+        zonasBaixa: 0,
+        votosAnterioresTotal: 0,
+        crescimentoNecessario: 0
+      })
+      return
+    }
 
-    const totalMetas = metas.length
-    const metaGeral = metas.reduce((acc, m) => acc + m.metaVotos, 0)
-    const progressoTotal = metas.reduce((acc, m) => acc + (m.metaVotos * m.progresso / 100), 0)
+    const totalMetas = metasData.length
+    const metaGeral = metasData.reduce((acc, m) => acc + m.metaVotos, 0)
+    const progressoTotal = metasData.reduce((acc, m) => acc + (m.metaVotos * m.progresso / 100), 0)
     const progressoGeral = metaGeral > 0 ? (progressoTotal / metaGeral) * 100 : 0
-    const zonasAlta = metas.filter(m => m.prioridade === 'alta').length
-    const zonasMedia = metas.filter(m => m.prioridade === 'media').length
-    const zonasBaixa = metas.filter(m => m.prioridade === 'baixa').length
-    const votosAnterioresTotal = metas.reduce((acc, m) => acc + m.votosAnteriores, 0)
+    const zonasAlta = metasData.filter(m => m.prioridade === 'alta').length
+    const zonasMedia = metasData.filter(m => m.prioridade === 'media').length
+    const zonasBaixa = metasData.filter(m => m.prioridade === 'baixa').length
+    const votosAnterioresTotal = metasData.reduce((acc, m) => acc + m.votosAnteriores, 0)
     const crescimentoNecessario = votosAnterioresTotal > 0 
       ? ((metaGeral - votosAnterioresTotal) / votosAnterioresTotal) * 100 
       : 0
@@ -336,11 +346,11 @@ export default function EstrategiaTerritorial() {
       votosAnterioresTotal,
       crescimentoNecessario
     })
-  }
+  }, [])
 
   useEffect(() => {
-    calcularResumo()
-  }, [metas])
+    calcularResumo(metas)
+  }, [metas, calcularResumo])
 
   const salvarMeta = async (meta: MetaZona) => {
     try {
