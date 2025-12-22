@@ -142,7 +142,8 @@ export default function EstrategiaTerritorial() {
         .select('*')
         .order('zona')
 
-      if (metasData && !metasError) {
+      if (metasData && metasData.length > 0 && !metasError) {
+        // Se houver dados na tabela, usar eles
         setMetas(metasData.map(m => ({
           id: m.id,
           zona: m.zona,
@@ -161,7 +162,7 @@ export default function EstrategiaTerritorial() {
           updated_at: m.updated_at
         })))
       } else {
-        // Se não houver tabela, criar dados de exemplo baseados nos dados eleitorais
+        // Se não houver dados ou tabela, criar dados de exemplo baseados nos dados eleitorais
         await carregarDadosExemplo()
       }
 
