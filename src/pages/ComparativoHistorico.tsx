@@ -88,12 +88,28 @@ export default function ComparativoHistorico() {
         return municipios
       }
 
+      // Buscar dados de 2022 da nova tabela votacao_municipio_2022
+      const getVotos2022Governador = async () => {
+        const { data, error } = await supabase
+          .from('votacao_municipio_2022')
+          .select('nm_municipio, total_votos')
+          .eq('ds_cargo', 'GOVERNADOR')
+
+        if (error) throw error
+        
+        const municipios: Record<string, number> = {}
+        ;(data || []).forEach(row => {
+          municipios[row.nm_municipio] = row.total_votos
+        })
+        return municipios
+      }
+
       // Buscar dados de cada ano
-      // 2020 e 2024: Prefeito (cargo 11)
-      // 2022: Governador (cargo 3) - eleições gerais
+      // 2020 e 2024: Prefeito (cargo 11) da tabela boletins_urna
+      // 2022: Governador da tabela votacao_municipio_2022 (dados corretos)
       const [votos2020, votos2022, votos2024] = await Promise.all([
         getVotosPorMunicipio(2020, 11),
-        getVotosPorMunicipio(2022, 3),
+        getVotos2022Governador(),
         getVotosPorMunicipio(2024, 11)
       ])
 
