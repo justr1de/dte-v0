@@ -395,16 +395,13 @@ export default function EstrategiaTerritorial() {
         if (error) throw error
       }
 
-      // Atualizar estado local
-      setMetas(prev => {
-        if (meta.id) {
-          return prev.map(m => m.id === meta.id ? meta : m)
-        }
-        return [...prev, { ...meta, id: Date.now() }]
-      })
-
+      // Recarregar dados do banco para garantir sincronização
+      await fetchData()
+      
       setModalAberto(false)
       setMetaEditando(null)
+      setMensagemSucesso('Meta salva com sucesso!')
+      setTimeout(() => setMensagemSucesso(null), 3000)
     } catch (error) {
       console.error('Erro ao salvar meta:', error)
       // Salvar localmente mesmo se falhar no banco
