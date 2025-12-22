@@ -46,25 +46,55 @@ export default function RadarEleitoral() {
   const [zonasData, setZonasData] = useState<ZonaData[]>([])
   const [selectedZona, setSelectedZona] = useState<string | null>(null)
   const [anoSelecionado, setAnoSelecionado] = useState('2022')
+  const [municipioSelecionado, setMunicipioSelecionado] = useState<string>('todos')
+  const [municipios, setMunicipios] = useState<string[]>([])
 
   useEffect(() => {
     fetchData()
+  }, [anoSelecionado, municipioSelecionado])
+
+  useEffect(() => {
+    // Buscar lista de municípios
+    const fetchMunicipios = async () => {
+      const { data } = await supabase
+        .from('comparecimento_abstencao')
+        .select('municipio')
+        .eq('ano', parseInt(anoSelecionado))
+      
+      if (data) {
+        const uniqueMunicipios = [...new Set(data.map(d => d.municipio).filter(Boolean))].sort()
+        setMunicipios(uniqueMunicipios as string[])
+      }
+    }
+    fetchMunicipios()
   }, [anoSelecionado])
 
   const fetchData = async () => {
     setLoading(true)
     try {
       // Buscar dados de comparecimento/abstenção por zona
-      const { data: comparecimentoData } = await supabase
+      let query = supabase
         .from('comparecimento_abstencao')
         .select('*')
         .eq('ano', parseInt(anoSelecionado))
+      
+      if (municipioSelecionado !== 'todos') {
+        query = query.eq('municipio', municipioSelecionado)
+      }
+      
+      const { data: comparecimentoData } = await query
 
       // Buscar perfil do eleitorado por zona
-      const { data: perfilData } = await supabase
+      let perfilQuery = supabase
         .from('perfil_eleitorado')
         .select('*')
         .eq('ano', parseInt(anoSelecionado))
+      
+      if (municipioSelecionado !== 'todos') {
+        perfilQuery = perfilQuery.eq('municipio', municipioSelecionado)
+      }
+      
+      const { data: perfilData } = await perfilQuery
 
       // Processar dados por zona
       const zonasMap = new Map<string, ZonaData>()
@@ -193,6 +223,16 @@ export default function RadarEleitoral() {
         </div>
 
         <div className="flex items-center gap-3">
+          <select
+            value={municipioSelecionado}
+            onChange={(e) => setMunicipioSelecionado(e.target.value)}
+            className="input"
+          >
+            <option value="todos">Todos os municípios</option>
+            {municipios.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
           <select
             value={anoSelecionado}
             onChange={(e) => setAnoSelecionado(e.target.value)}

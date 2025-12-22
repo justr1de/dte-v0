@@ -76,6 +76,7 @@ export default function Layout({ children }: LayoutProps) {
         { path: '/mapas', icon: Map, label: 'Mapas de Calor', roles: ['admin', 'gestor_campanha', 'candidato'] },
         { path: '/locais-votacao', icon: School, label: 'Locais de Votação', roles: ['admin', 'gestor_campanha', 'candidato'] },
         { path: '/comparativo-historico', icon: History, label: 'Comparativo Histórico', roles: ['admin', 'gestor_campanha', 'candidato'] },
+        { path: '/historico', icon: TrendingUp, label: 'Evolução Participação', roles: ['admin', 'gestor_campanha', 'candidato'] },
       ]
     },
     {
