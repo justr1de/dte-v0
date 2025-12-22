@@ -564,68 +564,93 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Seções por Cargo */}
+          {/* Seções por Cargo - Mostrar apenas cargos do ano selecionado */}
           <div className="space-y-4">
-            {/* Governador 2022 */}
-            {dadosCargo.governador2022.length > 0 && renderSection(
-              'Governador de Rondônia',
-              <Crown className="w-6 h-6 text-yellow-500" />,
-              'governador',
-              dadosCargo.governador2022,
-              2022
+            {/* Eleições Estaduais/Federais 2022 */}
+            {filtroAno === 2022 && (
+              <>
+                {/* Governador 2022 */}
+                {dadosCargo.governador2022.length > 0 && renderSection(
+                  'Governador de Rondônia',
+                  <Crown className="w-6 h-6 text-yellow-500" />,
+                  'governador',
+                  dadosCargo.governador2022,
+                  2022
+                )}
+
+                {/* Deputados Federais 2022 */}
+                {dadosCargo.deputadosFederais2022.length > 0 && renderSection(
+                  'Deputados Federais',
+                  <Landmark className="w-6 h-6 text-blue-500" />,
+                  'depFederal',
+                  dadosCargo.deputadosFederais2022,
+                  2022,
+                  8
+                )}
+
+                {/* Deputados Estaduais 2022 */}
+                {dadosCargo.deputadosEstaduais2022.length > 0 && renderSection(
+                  'Deputados Estaduais',
+                  <Building2 className="w-6 h-6 text-purple-500" />,
+                  'depEstadual',
+                  dadosCargo.deputadosEstaduais2022,
+                  2022,
+                  24
+                )}
+              </>
             )}
 
-            {/* Deputados Federais 2022 */}
-            {dadosCargo.deputadosFederais2022.length > 0 && renderSection(
-              'Deputados Federais',
-              <Landmark className="w-6 h-6 text-blue-500" />,
-              'depFederal',
-              dadosCargo.deputadosFederais2022,
-              2022,
-              8
+            {/* Eleições Municipais 2024 */}
+            {filtroAno === 2024 && (
+              <>
+                {/* Prefeito 2024 */}
+                {dadosCargo.prefeito2024.length > 0 && renderSection(
+                  'Prefeitos de Rondônia',
+                  <Award className="w-6 h-6 text-orange-500" />,
+                  'prefeito',
+                  dadosCargo.prefeito2024,
+                  2024
+                )}
+
+                {/* Vereadores 2024 */}
+                {dadosCargo.vereadores2024.length > 0 && renderSection(
+                  'Vereadores (Top 21)',
+                  <Users className="w-6 h-6 text-green-500" />,
+                  'vereadores',
+                  dadosCargo.vereadores2024,
+                  2024,
+                  21
+                )}
+              </>
             )}
 
-            {/* Deputados Estaduais 2022 */}
-            {dadosCargo.deputadosEstaduais2022.length > 0 && renderSection(
-              'Deputados Estaduais',
-              <Building2 className="w-6 h-6 text-purple-500" />,
-              'depEstadual',
-              dadosCargo.deputadosEstaduais2022,
-              2022,
-              24
-            )}
-
-            {/* Prefeito 2024 */}
-            {dadosCargo.prefeito2024.length > 0 && renderSection(
-              'Prefeitos de Rondônia',
-              <Award className="w-6 h-6 text-orange-500" />,
-              'prefeito',
-              dadosCargo.prefeito2024,
-              2024
-            )}
-
-            {/* Vereadores 2024 */}
-            {dadosCargo.vereadores2024.length > 0 && renderSection(
-              'Vereadores (Top 21)',
-              <Users className="w-6 h-6 text-green-500" />,
-              'vereadores',
-              dadosCargo.vereadores2024,
-              2024,
-              21
+            {/* Eleições Municipais 2020 */}
+            {filtroAno === 2020 && (
+              <div className="card p-6 text-center">
+                <p className="text-[var(--text-secondary)]">Dados de 2020 em processamento</p>
+                <p className="text-xs mt-1">Selecione 2022 para eleições estaduais ou 2024 para eleições municipais</p>
+              </div>
             )}
           </div>
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Gráfico Governador */}
+            {/* Gráfico por Ano */}
             <div className="card p-6">
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-5 h-5 text-[var(--accent-color)]" />
-                <h2 className="text-lg font-semibold">Resultado Governador 2022</h2>
+                <h2 className="text-lg font-semibold">
+                  {filtroAno === 2022 ? 'Resultado Governador 2022' : 
+                   filtroAno === 2024 ? 'Top 5 Prefeitos 2024' : 'Resultados'}
+                </h2>
               </div>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dadosCargo.governador2022} layout="vertical" margin={{ left: 20, right: 30 }}>
+                  <BarChart 
+                    data={filtroAno === 2022 ? dadosCargo.governador2022 : dadosCargo.prefeito2024.slice(0, 5)} 
+                    layout="vertical" 
+                    margin={{ left: 20, right: 30 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                     <XAxis type="number" stroke="var(--text-secondary)" tickFormatter={(v) => v.toLocaleString('pt-BR')} />
                     <YAxis 
@@ -644,7 +669,7 @@ export default function Dashboard() {
                       formatter={(value: number) => [value.toLocaleString('pt-BR'), 'Votos']}
                     />
                     <Bar dataKey="votos" radius={[0, 4, 4, 0]}>
-                      {dadosCargo.governador2022.map((_, index) => (
+                      {(filtroAno === 2022 ? dadosCargo.governador2022 : dadosCargo.prefeito2024.slice(0, 5)).map((_, index) => (
                         <Cell key={`cell-${index}`} fill={CORES_RANKING[index % CORES_RANKING.length]} />
                       ))}
                     </Bar>
