@@ -204,12 +204,13 @@ export default function Dashboard() {
         totalAbstencoes
       })
 
-      // ========== GOVERNADOR 2022 ==========
+      // ========== GOVERNADOR 2022 (2º Turno - Resultado Final) ==========
       const { data: govData } = await supabase
         .from('boletins_urna')
         .select('nm_votavel, qt_votos')
         .eq('cd_cargo_pergunta', 3)
         .eq('ano_eleicao', 2022)
+        .eq('nr_turno', 2) // 2º turno - resultado final
         .eq('sg_uf', 'RO')
 
       const govMap = new Map<string, number>()
@@ -224,13 +225,15 @@ export default function Dashboard() {
         .map(([nome, votos]) => ({ nome, votos }))
         .sort((a, b) => b.votos - a.votos)
         .slice(0, 5)
+        .map((c, i) => ({ ...c, eleito: i === 0 })) // Primeiro colocado é o eleito
 
-      // ========== DEPUTADOS FEDERAIS 2022 ==========
+      // ========== DEPUTADOS FEDERAIS 2022 (1º Turno) ==========
       const { data: depFedData } = await supabase
         .from('boletins_urna')
         .select('nm_votavel, qt_votos')
         .eq('cd_cargo_pergunta', 6)
         .eq('ano_eleicao', 2022)
+        .eq('nr_turno', 1) // Deputados só têm 1º turno
         .eq('sg_uf', 'RO')
 
       const depFedMap = new Map<string, number>()
@@ -246,12 +249,13 @@ export default function Dashboard() {
         .sort((a, b) => b.votos - a.votos)
         .slice(0, 8) // 8 vagas para RO
 
-      // ========== DEPUTADOS ESTADUAIS 2022 ==========
+      // ========== DEPUTADOS ESTADUAIS 2022 (1º Turno) ==========
       const { data: depEstData } = await supabase
         .from('boletins_urna')
         .select('nm_votavel, qt_votos')
         .eq('cd_cargo_pergunta', 7)
         .eq('ano_eleicao', 2022)
+        .eq('nr_turno', 1) // Deputados só têm 1º turno
         .eq('sg_uf', 'RO')
 
       const depEstMap = new Map<string, number>()
@@ -267,12 +271,13 @@ export default function Dashboard() {
         .sort((a, b) => b.votos - a.votos)
         .slice(0, 24) // 24 vagas
 
-      // ========== VEREADORES 2024 ==========
+      // ========== VEREADORES 2024 (1º Turno) ==========
       const { data: verData } = await supabase
         .from('boletins_urna')
         .select('nm_votavel, qt_votos')
         .eq('cd_cargo_pergunta', 13)
         .eq('ano_eleicao', 2024)
+        .eq('nr_turno', 1) // Vereadores só têm 1º turno
         .eq('sg_uf', 'RO')
 
       const verMap = new Map<string, number>()
@@ -288,12 +293,13 @@ export default function Dashboard() {
         .sort((a, b) => b.votos - a.votos)
         .slice(0, 21) // Top 21 vereadores de Porto Velho
 
-      // ========== PREFEITO 2024 ==========
+      // ========== PREFEITO 2024 (1º Turno) ==========
       const { data: prefData } = await supabase
         .from('boletins_urna')
         .select('nm_votavel, qt_votos')
         .eq('cd_cargo_pergunta', 11)
         .eq('ano_eleicao', 2024)
+        .eq('nr_turno', 1) // 1º turno
         .eq('sg_uf', 'RO')
 
       const prefMap = new Map<string, number>()
