@@ -205,119 +205,59 @@ export default function Dashboard() {
       })
 
       // ========== GOVERNADOR 2022 (2º Turno - Resultado Final) ==========
+      // Usando view pré-agregada para performance
       const { data: govData } = await supabase
-        .from('boletins_urna')
-        .select('nm_votavel, qt_votos')
-        .eq('cd_cargo_pergunta', 3)
-        .eq('ano_eleicao', 2022)
-        .eq('nr_turno', 2) // 2º turno - resultado final
-        .eq('sg_uf', 'RO')
-        .limit(50000) // Garantir que todos os registros sejam retornados
+        .from('votos_governador_2022')
+        .select('nm_votavel, total_votos')
+        .limit(10)
 
-      const govMap = new Map<string, number>()
-      if (govData) {
-        govData.forEach((v: any) => {
-          if (v.nm_votavel && !['Nulo', 'Branco'].includes(v.nm_votavel)) {
-            govMap.set(v.nm_votavel, (govMap.get(v.nm_votavel) || 0) + v.qt_votos)
-          }
-        })
-      }
-      const governador2022 = Array.from(govMap.entries())
-        .map(([nome, votos]) => ({ nome, votos }))
-        .sort((a, b) => b.votos - a.votos)
+      const governador2022 = (govData || [])
+        .map((v: any) => ({ nome: v.nm_votavel, votos: v.total_votos }))
         .slice(0, 5)
-        .map((c, i) => ({ ...c, eleito: i === 0 })) // Primeiro colocado é o eleito
+        .map((c: any, i: number) => ({ ...c, eleito: i === 0 })) // Primeiro colocado é o eleito
 
       // ========== DEPUTADOS FEDERAIS 2022 (1º Turno) ==========
+      // Usando view pré-agregada para performance
       const { data: depFedData } = await supabase
-        .from('boletins_urna')
-        .select('nm_votavel, qt_votos')
-        .eq('cd_cargo_pergunta', 6)
-        .eq('ano_eleicao', 2022)
-        .eq('nr_turno', 1) // Deputados só têm 1º turno
-        .eq('sg_uf', 'RO')
-        .limit(100000) // Garantir que todos os registros sejam retornados
+        .from('votos_deputados_federais_2022')
+        .select('nm_votavel, total_votos')
+        .limit(50)
 
-      const depFedMap = new Map<string, number>()
-      if (depFedData) {
-        depFedData.forEach((v: any) => {
-          if (v.nm_votavel && !['Nulo', 'Branco'].includes(v.nm_votavel)) {
-            depFedMap.set(v.nm_votavel, (depFedMap.get(v.nm_votavel) || 0) + v.qt_votos)
-          }
-        })
-      }
-      const deputadosFederais2022 = Array.from(depFedMap.entries())
-        .map(([nome, votos]) => ({ nome, votos, eleito: true }))
-        .sort((a, b) => b.votos - a.votos)
+      const deputadosFederais2022 = (depFedData || [])
+        .map((v: any) => ({ nome: v.nm_votavel, votos: v.total_votos, eleito: true }))
         .slice(0, 8) // 8 vagas para RO
 
       // ========== DEPUTADOS ESTADUAIS 2022 (1º Turno) ==========
+      // Usando view pré-agregada para performance
       const { data: depEstData } = await supabase
-        .from('boletins_urna')
-        .select('nm_votavel, qt_votos')
-        .eq('cd_cargo_pergunta', 7)
-        .eq('ano_eleicao', 2022)
-        .eq('nr_turno', 1) // Deputados só têm 1º turno
-        .eq('sg_uf', 'RO')
-        .limit(100000) // Garantir que todos os registros sejam retornados
+        .from('votos_deputados_estaduais_2022')
+        .select('nm_votavel, total_votos')
+        .limit(50)
 
-      const depEstMap = new Map<string, number>()
-      if (depEstData) {
-        depEstData.forEach((v: any) => {
-          if (v.nm_votavel && !['Nulo', 'Branco'].includes(v.nm_votavel)) {
-            depEstMap.set(v.nm_votavel, (depEstMap.get(v.nm_votavel) || 0) + v.qt_votos)
-          }
-        })
-      }
-      const deputadosEstaduais2022 = Array.from(depEstMap.entries())
-        .map(([nome, votos]) => ({ nome, votos, eleito: true }))
-        .sort((a, b) => b.votos - a.votos)
+      const deputadosEstaduais2022 = (depEstData || [])
+        .map((v: any) => ({ nome: v.nm_votavel, votos: v.total_votos, eleito: true }))
         .slice(0, 24) // 24 vagas
 
       // ========== VEREADORES 2024 (1º Turno) ==========
+      // Usando view pré-agregada para performance
       const { data: verData } = await supabase
-        .from('boletins_urna')
-        .select('nm_votavel, qt_votos')
-        .eq('cd_cargo_pergunta', 13)
-        .eq('ano_eleicao', 2024)
-        .eq('nr_turno', 1) // Vereadores só têm 1º turno
-        .eq('sg_uf', 'RO')
-        .limit(100000) // Garantir que todos os registros sejam retornados
+        .from('votos_vereadores_2024')
+        .select('nm_votavel, total_votos')
+        .limit(50)
 
-      const verMap = new Map<string, number>()
-      if (verData) {
-        verData.forEach((v: any) => {
-          if (v.nm_votavel && !['Nulo', 'Branco', 'UNIÃO', 'PL', 'PSD', 'MDB', 'PP', 'REPUBLICANOS', 'PDT', 'PSDB', 'PT', 'PODE', 'PODEMOS', 'AVANTE', 'PSB', 'CIDADANIA', 'SOLIDARIEDADE', 'PSOL', 'PCdoB', 'REDE', 'NOVO', 'DC', 'PMB', 'PRD', 'AGIR', 'MOBILIZA'].includes(v.nm_votavel)) {
-            verMap.set(v.nm_votavel, (verMap.get(v.nm_votavel) || 0) + v.qt_votos)
-          }
-        })
-      }
-      const vereadores2024 = Array.from(verMap.entries())
-        .map(([nome, votos]) => ({ nome, votos }))
-        .sort((a, b) => b.votos - a.votos)
-        .slice(0, 21) // Top 21 vereadores de Porto Velho
+      const vereadores2024 = (verData || [])
+        .map((v: any) => ({ nome: v.nm_votavel, votos: v.total_votos }))
+        .slice(0, 21) // Top 21 vereadores
 
       // ========== PREFEITO 2024 (1º Turno) ==========
+      // Usando view pré-agregada para performance
       const { data: prefData } = await supabase
-        .from('boletins_urna')
-        .select('nm_votavel, qt_votos')
-        .eq('cd_cargo_pergunta', 11)
-        .eq('ano_eleicao', 2024)
-        .eq('nr_turno', 1) // 1º turno
-        .eq('sg_uf', 'RO')
-        .limit(100000) // Garantir que todos os registros sejam retornados
+        .from('votos_prefeitos_2024')
+        .select('nm_votavel, total_votos')
+        .limit(50)
 
-      const prefMap = new Map<string, number>()
-      if (prefData) {
-        prefData.forEach((v: any) => {
-          if (v.nm_votavel && !['Nulo', 'Branco'].includes(v.nm_votavel)) {
-            prefMap.set(v.nm_votavel, (prefMap.get(v.nm_votavel) || 0) + v.qt_votos)
-          }
-        })
-      }
-      const prefeito2024 = Array.from(prefMap.entries())
-        .map(([nome, votos]) => ({ nome, votos }))
-        .sort((a, b) => b.votos - a.votos)
+      const prefeito2024 = (prefData || [])
+        .map((v: any) => ({ nome: v.nm_votavel, votos: v.total_votos }))
         .slice(0, 10)
 
       setDadosCargo({
