@@ -217,10 +217,10 @@ export default function EstrategiaTerritorial() {
           metaPercentual: 3,
           votosAnteriores: Math.floor(metaBase * 0.7), // Simulando 70% da meta como votos anteriores
           totalEleitores: data.eleitores,
-          prioridade: index < 5 ? 'alta' : index < 15 ? 'media' : 'baixa',
+          prioridade: (index < 5 ? 'alta' : index < 15 ? 'media' : 'baixa') as 'alta' | 'media' | 'baixa',
           estrategia: '',
           responsavel: '',
-          status: 'pendente',
+          status: 'pendente' as 'pendente' | 'em_andamento' | 'concluida',
           progresso: 0,
           observacoes: ''
         }
