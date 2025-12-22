@@ -251,20 +251,37 @@ export default function Dashboard() {
         .slice(0, 21) // Top 21 vereadores
 
       // ========== PREFEITO 2024 (1º Turno) ==========
-      // Usando view pré-agregada com município para performance
-      const { data: prefData } = await supabase
-        .from('votos_prefeitos_2024_detalhado')
-        .select('nm_votavel, nm_municipio, nm_partido, total_votos')
-        .limit(50)
+      // Tentar usar view pré-agregada com município, senão usar view simples
+      let prefeito2024: Candidato[] = []
+      try {
+        const { data: prefData, error: prefError } = await supabase
+          .from('votos_prefeitos_2024_detalhado')
+          .select('nm_votavel, nm_municipio, nm_partido, total_votos')
+          .limit(50)
 
-      const prefeito2024 = (prefData || [])
-        .map((v: any) => ({ 
-          nome: v.nm_votavel, 
-          votos: v.total_votos, 
-          municipio: v.nm_municipio,
-          partido: v.nm_partido
-        }))
-        .slice(0, 10)
+        if (prefError || !prefData || prefData.length === 0) {
+          // Fallback para view simples
+          const { data: prefDataSimples } = await supabase
+            .from('votos_prefeitos_2024')
+            .select('nm_votavel, total_votos')
+            .limit(50)
+          
+          prefeito2024 = (prefDataSimples || [])
+            .map((v: any) => ({ nome: v.nm_votavel, votos: v.total_votos }))
+            .slice(0, 10)
+        } else {
+          prefeito2024 = (prefData || [])
+            .map((v: any) => ({ 
+              nome: v.nm_votavel, 
+              votos: v.total_votos, 
+              municipio: v.nm_municipio,
+              partido: v.nm_partido
+            }))
+            .slice(0, 10)
+        }
+      } catch (e) {
+        console.error('Erro ao buscar prefeitos:', e)
+      }
 
       setDadosCargo({
         governador2022,
