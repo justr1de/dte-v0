@@ -40,6 +40,7 @@ import SimuladorCenarios from './pages/SimuladorCenarios'
 import PerfilEleitor from './pages/PerfilEleitor'
 import MonitorConcorrencia from './pages/MonitorConcorrencia'
 import CalculadoraMetas from './pages/CalculadoraMetas'
+import EstrategiaTerritorial from './pages/EstrategiaTerritorial'
 
 // Central de Insights
 import InteligenciaTerritorial from './pages/insights/InteligenciaTerritorial'
@@ -135,6 +136,7 @@ export default function App() {
       <Route path="/perfil-eleitor" element={<ProtectedRoute><PerfilEleitor /></ProtectedRoute>} />
       <Route path="/monitor-concorrencia" element={<ProtectedRoute><MonitorConcorrencia /></ProtectedRoute>} />
       <Route path="/calculadora-metas" element={<ProtectedRoute><CalculadoraMetas /></ProtectedRoute>} />
+      <Route path="/estrategia-territorial" element={<ProtectedRoute><EstrategiaTerritorial /></ProtectedRoute>} />
 
       {/* Central de Insights */}
       <Route path="/insights" element={<ProtectedRoute><DashboardInsights /></ProtectedRoute>} />

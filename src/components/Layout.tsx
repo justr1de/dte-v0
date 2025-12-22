@@ -102,6 +102,7 @@ export default function Layout({ children }: LayoutProps) {
         { path: '/perfil-eleitor', icon: UserCircle, label: 'Perfil do Eleitor Ideal', roles: ['admin', 'gestor_campanha'] },
         { path: '/monitor-concorrencia', icon: Eye, label: 'Monitor de Concorrência', roles: ['admin', 'gestor_campanha'] },
         { path: '/calculadora-metas', icon: Calculator, label: 'Calculadora de Metas', roles: ['admin', 'gestor_campanha'] },
+        { path: '/estrategia-territorial', icon: Target, label: 'Estratégia Territorial', roles: ['admin', 'gestor_campanha'] },
       ]
     },
     {
