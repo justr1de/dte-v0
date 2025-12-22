@@ -5,6 +5,7 @@ import {
   Vote,
   MapPin,
   TrendingUp,
+  TrendingDown,
   Filter,
   Download,
   Search,
@@ -14,7 +15,12 @@ import {
   Building2,
   Award,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Trophy,
+  XCircle,
+  Percent,
+  Target,
+  AlertTriangle
 } from 'lucide-react'
 import {
   BarChart,
@@ -100,6 +106,12 @@ const NOMES_PARTIDOS: Record<string, string> = {
   '80': 'UP',
 }
 
+// Número de vagas por cargo
+const VAGAS_CARGO: Record<string, number> = {
+  'DEPUTADO FEDERAL': 8,
+  'DEPUTADO ESTADUAL': 24
+}
+
 export default function Deputados() {
   const [loading, setLoading] = useState(true)
   const [candidatos, setCandidatos] = useState<Candidato[]>([])
@@ -111,6 +123,9 @@ export default function Deputados() {
   const [expandedZona, setExpandedZona] = useState<number | null>(null)
   const [municipioFiltro, setMunicipioFiltro] = useState<string>('todos')
   const [municipios, setMunicipios] = useState<string[]>([])
+  const [visualizacao, setVisualizacao] = useState<'eleitos' | 'nao_eleitos'>('eleitos')
+
+  const vagasDisponiveis = VAGAS_CARGO[tipoCargo] || 24
 
   useEffect(() => {
     fetchCandidatos()
@@ -136,7 +151,8 @@ export default function Deputados() {
       
       // Filtrar votos brancos e nulos
       const candidatosFiltrados = (data || []).filter(c => 
-        !['95', '96'].includes(c.nr_votavel)
+        !['95', '96'].includes(c.nr_votavel) &&
+        !['VOTO BRANCO', 'VOTO NULO'].includes(c.nm_votavel)
       )
       
       setCandidatos(candidatosFiltrados)
@@ -248,6 +264,26 @@ export default function Deputados() {
     }
   }
 
+  // Separar eleitos e não eleitos
+  const candidatosEleitos = candidatos.slice(0, vagasDisponiveis)
+  const candidatosNaoEleitos = candidatos.slice(vagasDisponiveis)
+
+  // Candidatos a exibir baseado na visualização
+  const candidatosExibidos = visualizacao === 'eleitos' ? candidatosEleitos : candidatosNaoEleitos
+
+  // Métricas avançadas
+  const totalVotos = candidatos.reduce((acc, c) => acc + c.votos_total, 0)
+  const linhaDeCorte = candidatosEleitos[candidatosEleitos.length - 1]?.votos_total || 0
+  const mediaVotosEleitos = candidatosEleitos.length > 0 
+    ? Math.round(candidatosEleitos.reduce((acc, c) => acc + c.votos_total, 0) / candidatosEleitos.length)
+    : 0
+  const medianaVotosEleitos = candidatosEleitos.length > 0
+    ? candidatosEleitos[Math.floor(candidatosEleitos.length / 2)]?.votos_total || 0
+    : 0
+  const concentracaoTop5 = candidatos.length > 0
+    ? ((candidatos.slice(0, 5).reduce((acc, c) => acc + c.votos_total, 0) / totalVotos) * 100).toFixed(1)
+    : '0'
+
   // Dados para gráfico de partidos
   const dadosPartidos = () => {
     const partidos: Record<string, number> = {}
@@ -268,12 +304,13 @@ export default function Deputados() {
   }
 
   // Filtrar candidatos pela busca
-  const candidatosFiltrados = candidatos.filter(c =>
+  const candidatosFiltrados = candidatosExibidos.filter(c =>
     c.nm_votavel.toLowerCase().includes(busca.toLowerCase()) ||
     c.nr_votavel.includes(busca)
   )
 
   const candidatoAtual = candidatos.find(c => c.nr_votavel === candidatoSelecionado)
+  const posicaoCandidatoAtual = candidatos.findIndex(c => c.nr_votavel === candidatoSelecionado) + 1
 
   const exportarCSV = () => {
     if (!candidatoAtual || votacaoZonas.length === 0) return
@@ -332,8 +369,8 @@ export default function Deputados() {
         </div>
       </div>
 
-      {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Cards de Resumo - Expandido */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-500/10">
@@ -342,6 +379,9 @@ export default function Deputados() {
             <div>
               <p className="text-sm text-[var(--text-secondary)]">Candidatos</p>
               <p className="text-xl font-bold">{candidatos.length}</p>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {candidatosEleitos.length} eleitos • {candidatosNaoEleitos.length} não eleitos
+              </p>
             </div>
           </div>
         </div>
@@ -352,21 +392,23 @@ export default function Deputados() {
             </div>
             <div>
               <p className="text-sm text-[var(--text-secondary)]">Total de Votos</p>
-              <p className="text-xl font-bold">
-                {candidatos.reduce((acc, c) => acc + c.votos_total, 0).toLocaleString()}
+              <p className="text-xl font-bold">{totalVotos.toLocaleString()}</p>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Média eleitos: {mediaVotosEleitos.toLocaleString()}
               </p>
             </div>
           </div>
         </div>
         <div className="card p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <Award className="w-5 h-5 text-purple-500" />
+            <div className="p-2 rounded-lg bg-red-500/10">
+              <Target className="w-5 h-5 text-red-500" />
             </div>
             <div>
-              <p className="text-sm text-[var(--text-secondary)]">Mais Votado</p>
-              <p className="text-lg font-bold truncate" title={candidatos[0]?.nm_votavel}>
-                {candidatos[0]?.nm_votavel?.split(' ').slice(0, 2).join(' ') || '-'}
+              <p className="text-sm text-[var(--text-secondary)]">Linha de Corte</p>
+              <p className="text-xl font-bold">{linhaDeCorte.toLocaleString()}</p>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Mínimo para eleição ({vagasDisponiveis}ª vaga)
               </p>
             </div>
           </div>
@@ -381,7 +423,92 @@ export default function Deputados() {
               <p className="text-xl font-bold">
                 {new Set(candidatos.map(c => c.partido_num)).size}
               </p>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Top 5 = {concentracaoTop5}% dos votos
+              </p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Card Top 5 Mais Votados */}
+      <div className="card p-4">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-yellow-500" />
+          Top 5 Mais Votados - {tipoCargo}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {candidatos.slice(0, 5).map((c, index) => (
+            <div 
+              key={c.id} 
+              className={`p-4 rounded-lg border-2 ${
+                index === 0 ? 'border-yellow-500 bg-yellow-500/5' :
+                index === 1 ? 'border-gray-400 bg-gray-400/5' :
+                index === 2 ? 'border-amber-600 bg-amber-600/5' :
+                'border-[var(--border-color)] bg-[var(--bg-secondary)]'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`text-2xl font-bold ${
+                  index === 0 ? 'text-yellow-500' :
+                  index === 1 ? 'text-gray-400' :
+                  index === 2 ? 'text-amber-600' :
+                  'text-[var(--text-secondary)]'
+                }`}>#{index + 1}</span>
+                <span
+                  className="px-2 py-0.5 rounded text-xs font-bold text-white"
+                  style={{ backgroundColor: CORES_PARTIDOS[c.partido_num] || '#6B7280' }}
+                >
+                  {NOMES_PARTIDOS[c.partido_num] || c.partido_num}
+                </span>
+              </div>
+              <p className="font-semibold text-sm truncate" title={c.nm_votavel}>
+                {c.nm_votavel}
+              </p>
+              <p className="text-xs text-[var(--text-secondary)]">Nº {c.nr_votavel}</p>
+              <p className="text-xl font-bold text-[var(--accent-color)] mt-2">
+                {c.votos_total.toLocaleString()}
+              </p>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {((c.votos_total / totalVotos) * 100).toFixed(1)}% do total
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Métricas Avançadas */}
+      <div className="card p-4">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <BarChart3 className="w-5 h-5" />
+          Métricas de Análise
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="text-center p-3 bg-[var(--bg-secondary)] rounded-lg">
+            <p className="text-2xl font-bold text-blue-500">{vagasDisponiveis}</p>
+            <p className="text-xs text-[var(--text-secondary)]">Vagas Disponíveis</p>
+          </div>
+          <div className="text-center p-3 bg-[var(--bg-secondary)] rounded-lg">
+            <p className="text-2xl font-bold text-green-500">{mediaVotosEleitos.toLocaleString()}</p>
+            <p className="text-xs text-[var(--text-secondary)]">Média Eleitos</p>
+          </div>
+          <div className="text-center p-3 bg-[var(--bg-secondary)] rounded-lg">
+            <p className="text-2xl font-bold text-purple-500">{medianaVotosEleitos.toLocaleString()}</p>
+            <p className="text-xs text-[var(--text-secondary)]">Mediana Eleitos</p>
+          </div>
+          <div className="text-center p-3 bg-[var(--bg-secondary)] rounded-lg">
+            <p className="text-2xl font-bold text-red-500">{linhaDeCorte.toLocaleString()}</p>
+            <p className="text-xs text-[var(--text-secondary)]">Linha de Corte</p>
+          </div>
+          <div className="text-center p-3 bg-[var(--bg-secondary)] rounded-lg">
+            <p className="text-2xl font-bold text-orange-500">{candidatos[0]?.votos_total.toLocaleString() || 0}</p>
+            <p className="text-xs text-[var(--text-secondary)]">Maior Votação</p>
+          </div>
+          <div className="text-center p-3 bg-[var(--bg-secondary)] rounded-lg">
+            <p className="text-2xl font-bold text-cyan-500">
+              {candidatosNaoEleitos[0]?.votos_total.toLocaleString() || 0}
+            </p>
+            <p className="text-xs text-[var(--text-secondary)]">1º Suplente</p>
           </div>
         </div>
       </div>
@@ -395,11 +522,30 @@ export default function Deputados() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Lista de Candidatos */}
           <div className="card p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Candidatos
-              </h2>
+            {/* Tabs Eleitos/Não Eleitos */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setVisualizacao('eleitos')}
+                className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                  visualizacao === 'eleitos'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
+                }`}
+              >
+                <Trophy className="w-4 h-4" />
+                Eleitos ({candidatosEleitos.length})
+              </button>
+              <button
+                onClick={() => setVisualizacao('nao_eleitos')}
+                className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                  visualizacao === 'nao_eleitos'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
+                }`}
+              >
+                <XCircle className="w-4 h-4" />
+                Não Eleitos ({candidatosNaoEleitos.length})
+              </button>
             </div>
             
             <div className="relative mb-4">
@@ -414,34 +560,50 @@ export default function Deputados() {
             </div>
 
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
-              {candidatosFiltrados.slice(0, 50).map((c, index) => (
-                <button
-                  key={c.id}
-                  onClick={() => setCandidatoSelecionado(c.nr_votavel)}
-                  className={`w-full p-3 rounded-lg text-left transition-all ${
-                    candidatoSelecionado === c.nr_votavel
-                      ? 'bg-[var(--accent-color)] text-white'
-                      : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono opacity-60">#{index + 1}</span>
-                      <span
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                        style={{ backgroundColor: CORES_PARTIDOS[c.partido_num] || '#6B7280' }}
-                      >
-                        {c.partido_num}
+              {candidatosFiltrados.slice(0, 50).map((c) => {
+                const posicaoGeral = candidatos.findIndex(cand => cand.nr_votavel === c.nr_votavel) + 1
+                const isEleito = posicaoGeral <= vagasDisponiveis
+                
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setCandidatoSelecionado(c.nr_votavel)}
+                    className={`w-full p-3 rounded-lg text-left transition-all ${
+                      candidatoSelecionado === c.nr_votavel
+                        ? 'bg-[var(--accent-color)] text-white'
+                        : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${
+                          isEleito ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
+                        }`}>
+                          #{posicaoGeral}
+                        </span>
+                        <span
+                          className="px-2 py-0.5 rounded text-xs font-bold text-white"
+                          style={{ backgroundColor: CORES_PARTIDOS[c.partido_num] || '#6B7280' }}
+                        >
+                          {NOMES_PARTIDOS[c.partido_num] || c.partido_num}
+                        </span>
+                      </div>
+                      <span className="text-sm font-semibold">
+                        {c.votos_total.toLocaleString()}
                       </span>
                     </div>
-                    <span className="text-sm font-semibold">
-                      {c.votos_total.toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium mt-1 truncate">{c.nm_votavel}</p>
-                  <p className="text-xs opacity-70">Nº {c.nr_votavel}</p>
-                </button>
-              ))}
+                    <p className="text-sm font-medium mt-1 truncate">{c.nm_votavel}</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-xs opacity-70">Nº {c.nr_votavel}</p>
+                      {!isEleito && (
+                        <p className="text-xs text-red-400">
+                          -{(linhaDeCorte - c.votos_total).toLocaleString()} votos
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -451,7 +613,7 @@ export default function Deputados() {
               <>
                 {/* Info do Candidato Selecionado */}
                 <div className="card p-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex items-center gap-4">
                       <div
                         className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold text-white"
@@ -464,6 +626,18 @@ export default function Deputados() {
                         <p className="text-[var(--text-secondary)]">
                           Nº {candidatoAtual.nr_votavel} • {NOMES_PARTIDOS[candidatoAtual.partido_num] || candidatoAtual.partido_num}
                         </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                            posicaoCandidatoAtual <= vagasDisponiveis
+                              ? 'bg-green-500/20 text-green-500'
+                              : 'bg-red-500/20 text-red-500'
+                          }`}>
+                            {posicaoCandidatoAtual <= vagasDisponiveis ? '✓ ELEITO' : '✗ NÃO ELEITO'}
+                          </span>
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            {posicaoCandidatoAtual}º lugar
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
@@ -471,6 +645,9 @@ export default function Deputados() {
                         {candidatoAtual.votos_total.toLocaleString()}
                       </p>
                       <p className="text-sm text-[var(--text-secondary)]">votos totais</p>
+                      <p className="text-xs text-[var(--text-secondary)]">
+                        {((candidatoAtual.votos_total / totalVotos) * 100).toFixed(2)}% do total
+                      </p>
                     </div>
                   </div>
                 </div>
