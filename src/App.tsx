@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Eleitorado from './pages/Eleitorado'
 import Candidatos from './pages/Candidatos'
+import Deputados from './pages/Deputados'
 import Resultados from './pages/Resultados'
 import VotosNulos from './pages/VotosNulos'
 import Mapas from './pages/Mapas'
@@ -103,6 +104,7 @@ export default function App() {
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/eleitorado" element={<ProtectedRoute><Eleitorado /></ProtectedRoute>} />
       <Route path="/candidatos" element={<ProtectedRoute><Candidatos /></ProtectedRoute>} />
+      <Route path="/deputados" element={<ProtectedRoute><Deputados /></ProtectedRoute>} />
       <Route path="/resultados" element={<ProtectedRoute><Resultados /></ProtectedRoute>} />
       <Route path="/votos-nulos" element={<ProtectedRoute><VotosNulos /></ProtectedRoute>} />
       <Route path="/mapas" element={<ProtectedRoute><Mapas /></ProtectedRoute>} />

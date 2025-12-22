@@ -70,6 +70,7 @@ export default function Layout({ children }: LayoutProps) {
       items: [
         { path: '/eleitorado', icon: Users, label: 'Eleitorado', roles: ['admin', 'gestor_campanha', 'candidato'] },
         { path: '/candidatos', icon: UserCheck, label: 'Candidatos', roles: ['admin', 'gestor_campanha'] },
+        { path: '/deputados', icon: Users, label: 'Deputados 2022', roles: ['admin', 'gestor_campanha'] },
         { path: '/resultados', icon: BarChart3, label: 'Resultados', roles: ['admin', 'gestor_campanha', 'candidato'] },
         { path: '/votos-nulos', icon: Vote, label: 'Votos Nulos', roles: ['admin', 'gestor_campanha', 'candidato'] },
         { path: '/mapas', icon: Map, label: 'Mapas de Calor', roles: ['admin', 'gestor_campanha', 'candidato'] },
