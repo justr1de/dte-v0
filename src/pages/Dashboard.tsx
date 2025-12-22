@@ -137,16 +137,16 @@ export default function Dashboard() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Buscar dados gerais
+      // Buscar dados gerais - sempre usar 2024 como referência para eleitores (dados mais recentes)
       const { data: perfilData } = await supabase
         .from('perfil_eleitorado')
         .select('total_eleitores, municipio, zona')
-        .eq('ano', filtroAno)
+        .eq('ano', 2024) // Sempre usar 2024 pois é o único ano com dados de eleitorado
 
       let totalEleitores = 0
       const zonasSet = new Set<string>()
       const municipiosSet = new Set<string>()
-      if (perfilData) {
+      if (perfilData && perfilData.length > 0) {
         perfilData.forEach((p: any) => {
           totalEleitores += p.total_eleitores || 0
           zonasSet.add(p.zona)
@@ -154,22 +154,27 @@ export default function Dashboard() {
         })
       }
 
-      // Buscar dados de comparecimento
+      // Buscar dados de comparecimento - usar nomes corretos das colunas (ano, turno)
       const { data: compData } = await supabase
         .from('comparecimento_abstencao')
         .select('*')
-        .eq('ano_eleicao', filtroAno)
-        .eq('nr_turno', filtroTurno)
+        .eq('ano', filtroAno)
+        .eq('turno', filtroTurno)
 
       let totalComparecimento = 0
       let totalAbstencoes = 0
       let totalAptos = 0
-      if (compData) {
+      if (compData && compData.length > 0) {
         compData.forEach((c: any) => {
           totalComparecimento += c.qt_comparecimento || 0
           totalAbstencoes += c.qt_abstencao || 0
           totalAptos += c.qt_aptos || 0
         })
+      }
+
+      // Se não houver dados de comparecimento, usar dados do perfil_eleitorado
+      if (totalAptos === 0 && totalEleitores > 0) {
+        totalAptos = totalEleitores
       }
 
       const participacao = totalAptos > 0 ? (totalComparecimento / totalAptos) * 100 : 0
