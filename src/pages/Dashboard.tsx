@@ -45,6 +45,7 @@ interface Candidato {
   votos: number
   partido?: string
   eleito?: boolean
+  municipio?: string
 }
 
 interface DadosCargo {
@@ -250,14 +251,19 @@ export default function Dashboard() {
         .slice(0, 21) // Top 21 vereadores
 
       // ========== PREFEITO 2024 (1º Turno) ==========
-      // Usando view pré-agregada para performance
+      // Usando view pré-agregada com município para performance
       const { data: prefData } = await supabase
-        .from('votos_prefeitos_2024')
-        .select('nm_votavel, total_votos')
+        .from('votos_prefeitos_2024_detalhado')
+        .select('nm_votavel, nm_municipio, nm_partido, total_votos')
         .limit(50)
 
       const prefeito2024 = (prefData || [])
-        .map((v: any) => ({ nome: v.nm_votavel, votos: v.total_votos }))
+        .map((v: any) => ({ 
+          nome: v.nm_votavel, 
+          votos: v.total_votos, 
+          municipio: v.nm_municipio,
+          partido: v.nm_partido
+        }))
         .slice(0, 10)
 
       setDadosCargo({
@@ -340,7 +346,7 @@ export default function Dashboard() {
     
     return (
       <div 
-        key={candidato.nome} 
+        key={candidato.nome + (candidato.municipio || '')} 
         className={`p-4 rounded-lg border ${index < 3 ? 'border-[var(--accent-color)] bg-[var(--accent-color)]/5' : 'border-[var(--border-color)] bg-[var(--bg-secondary)]'}`}
       >
         <div className="flex items-center justify-between mb-2">
@@ -354,6 +360,25 @@ export default function Dashboard() {
             </span>
           )}
         </div>
+        {/* Município e Partido */}
+        {(candidato.municipio || candidato.partido) && (
+          <div className="flex items-center gap-2 mb-2 text-xs">
+            {candidato.municipio && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded">
+                <MapPin className="w-3 h-3" />
+                {candidato.municipio}
+              </span>
+            )}
+            {candidato.partido && (
+              <span 
+                className="px-2 py-0.5 rounded text-white text-xs"
+                style={{ backgroundColor: getCorPartido(candidato.partido) }}
+              >
+                {candidato.partido}
+              </span>
+            )}
+          </div>
+        )}
         <div className="flex items-center justify-between text-sm">
           <span className="text-[var(--text-secondary)]">
             {candidato.votos.toLocaleString('pt-BR')} votos

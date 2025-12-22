@@ -41,6 +41,7 @@ import PerfilEleitor from './pages/PerfilEleitor'
 import MonitorConcorrencia from './pages/MonitorConcorrencia'
 import CalculadoraMetas from './pages/CalculadoraMetas'
 import EstrategiaTerritorial from './pages/EstrategiaTerritorial'
+import Vereadores2024 from './pages/Vereadores2024'
 
 // Central de Insights
 import InteligenciaTerritorial from './pages/insights/InteligenciaTerritorial'
@@ -137,6 +138,7 @@ export default function App() {
       <Route path="/monitor-concorrencia" element={<ProtectedRoute><MonitorConcorrencia /></ProtectedRoute>} />
       <Route path="/calculadora-metas" element={<ProtectedRoute><CalculadoraMetas /></ProtectedRoute>} />
       <Route path="/estrategia-territorial" element={<ProtectedRoute><EstrategiaTerritorial /></ProtectedRoute>} />
+      <Route path="/vereadores-2024" element={<ProtectedRoute><Vereadores2024 /></ProtectedRoute>} />
 
       {/* Central de Insights */}
       <Route path="/insights" element={<ProtectedRoute><DashboardInsights /></ProtectedRoute>} />
