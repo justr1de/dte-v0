@@ -25,6 +25,7 @@ import Importar from './pages/Importar'
 import Usuarios from './pages/Usuarios'
 import Configuracoes from './pages/Configuracoes'
 import SobreProjeto from './pages/SobreProjeto'
+import ManualAssistente from './pages/ManualAssistente'
 
 // Fase 2 - Pesquisas
 import Pesquisas from './pages/Pesquisas'
@@ -158,6 +159,7 @@ export default function App() {
       <Route path="/admin/super" element={<AdminRoute><SuperAdmin /></AdminRoute>} />
       <Route path="/admin/logs-auditoria" element={<AdminRoute><LogsAuditoria /></AdminRoute>} />
       <Route path="/sobre" element={<ProtectedRoute><SobreProjeto /></ProtectedRoute>} />
+      <Route path="/manual-assistente" element={<ProtectedRoute><ManualAssistente /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

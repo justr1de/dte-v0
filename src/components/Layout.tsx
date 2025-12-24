@@ -43,7 +43,8 @@ import {
   Trophy,
   ThermometerSun,
   School,
-  Info
+  Info,
+  Bot
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -116,6 +117,7 @@ export default function Layout({ children }: LayoutProps) {
         { path: '/importar', icon: Upload, label: 'Importar Dados', roles: ['admin'] },
         { path: '/configuracoes', icon: Settings, label: 'Configurações', roles: ['admin'] },
         { path: '/sobre', icon: Info, label: 'Sobre o Projeto', roles: ['admin', 'gestor_campanha', 'candidato'] },
+        { path: '/manual-assistente', icon: Bot, label: 'Manual do Assistente', roles: ['admin', 'gestor_campanha', 'candidato'] },
       ]
     }
   ]
