@@ -2,7 +2,26 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
-import { Eye, EyeOff, Sun, Moon, LogIn, Lock } from 'lucide-react'
+import { 
+  Eye, 
+  EyeOff, 
+  Sun, 
+  Moon, 
+  LogIn, 
+  Lock,
+  BarChart3,
+  MapPin,
+  Users,
+  TrendingUp,
+  Target,
+  Shield,
+  Database,
+  Zap,
+  PieChart,
+  Map,
+  FileText,
+  Brain
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function Login() {
@@ -157,30 +176,89 @@ export default function Login() {
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl transform translate-x-1/2 translate-y-1/2" />
+          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white rounded-full blur-2xl transform -translate-x-1/2 -translate-y-1/2" />
         </div>
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center px-16 text-white">
-          <h2 className="text-4xl font-bold mb-4">
+        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16 text-white overflow-y-auto py-12">
+          <h2 className="text-3xl xl:text-4xl font-bold mb-4">
             SISTEMA DE INTELIGÊNCIA ELEITORAL E GESTÃO DE CAMPANHA
           </h2>
-          <p className="text-xl text-white/80 mb-8 max-w-lg">
+          <p className="text-lg text-white/80 mb-6 max-w-lg">
             Plataforma completa para rastreamento e análise de dados eleitorais, 
             com foco em votos nulos, perfil demográfico e visualizações geográficas.
           </p>
 
-          <div className="grid grid-cols-2 gap-4 max-w-md">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 gap-3 max-w-md mb-8">
             {[
-              { value: '1.2M+', label: 'Eleitores' },
-              { value: '52', label: 'Municípios' },
-              { value: '56', label: 'Zonas' },
-              { value: '8+', label: 'Anos de dados' },
+              { value: '1.2M+', label: 'Eleitores', icon: Users },
+              { value: '52', label: 'Municípios', icon: MapPin },
+              { value: '29', label: 'Zonas Eleitorais', icon: Map },
+              { value: '8+', label: 'Anos de dados', icon: Database },
             ].map((stat, index) => (
-              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                <p className="text-3xl font-bold">{stat.value}</p>
-                <p className="text-white/70">{stat.label}</p>
+              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 flex items-center gap-3">
+                <stat.icon className="w-8 h-8 text-white/70" />
+                <div>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-sm text-white/70">{stat.label}</p>
+                </div>
               </div>
             ))}
+          </div>
+
+          {/* Features Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-white/90 flex items-center gap-2">
+              <Zap className="w-5 h-5" />
+              Funcionalidades Principais
+            </h3>
+            
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { icon: BarChart3, title: 'Dashboard Analítico', desc: 'Visão geral com métricas em tempo real' },
+                { icon: Map, title: 'Mapas de Calor', desc: 'Visualização geográfica de votos e abstenções' },
+                { icon: PieChart, title: 'Análise de Resultados', desc: 'Comparativo entre candidatos e partidos' },
+                { icon: Target, title: 'Metas Territoriais', desc: 'Definição e acompanhamento de metas por região' },
+                { icon: Brain, title: 'Análise Preditiva', desc: 'Projeções baseadas em dados históricos' },
+                { icon: FileText, title: 'Relatórios Detalhados', desc: 'Exportação de dados em múltiplos formatos' },
+              ].map((feature, index) => (
+                <div key={index} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
+                  <feature.icon className="w-5 h-5 text-white/70 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-sm">{feature.title}</p>
+                    <p className="text-xs text-white/60">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Additional Info */}
+          <div className="mt-6 pt-6 border-t border-white/20">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-white/70" />
+                <div>
+                  <p className="text-sm font-medium">Dados Seguros</p>
+                  <p className="text-xs text-white/60">Criptografia de ponta</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-white/70" />
+                <div>
+                  <p className="text-sm font-medium">Atualização Constante</p>
+                  <p className="text-xs text-white/60">Dados do TSE</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-6 pt-4 border-t border-white/10">
+            <p className="text-xs text-white/50 text-center">
+              Desenvolvido por DATA-RO Inteligência Territorial
+            </p>
           </div>
         </div>
       </div>
