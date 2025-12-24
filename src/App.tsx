@@ -54,6 +54,7 @@ import GerenciarUsuarios from './pages/admin/GerenciarUsuarios'
 import ControleAcessos from './pages/admin/ControleAcessos'
 import AuditoriaLogin from './pages/admin/AuditoriaLogin'
 import SuperAdmin from './pages/admin/SuperAdmin'
+import LogsAuditoria from './pages/admin/LogsAuditoria'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -154,6 +155,7 @@ export default function App() {
       <Route path="/admin/permissoes" element={<AdminRoute><ControleAcessos /></AdminRoute>} />
       <Route path="/admin/auditoria" element={<AdminRoute><AuditoriaLogin /></AdminRoute>} />
       <Route path="/admin/super" element={<AdminRoute><SuperAdmin /></AdminRoute>} />
+      <Route path="/admin/logs-auditoria" element={<AdminRoute><LogsAuditoria /></AdminRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

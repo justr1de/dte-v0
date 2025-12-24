@@ -133,6 +133,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/admin/permissoes', icon: KeyRound, label: 'Controle de Acessos' },
     { path: '/admin/auditoria', icon: History, label: 'Auditoria de Login' },
     { path: '/admin/super', icon: Shield, label: 'Super Administração', superadminOnly: true },
+    { path: '/admin/logs-auditoria', icon: History, label: 'Logs de Auditoria', superadminOnly: true },
   ]
 
   const handleSignOut = async () => {
