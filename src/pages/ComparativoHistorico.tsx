@@ -44,58 +44,36 @@ export default function ComparativoHistorico() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Função para buscar votos por município de um ano específico
+      // Usar função RPC para buscar votos por município corretamente
       const getVotosPorMunicipio = async (ano: number, cargo: number) => {
-        let allData: any[] = []
-        let page = 0
-        const pageSize = 50000
-
-        while (true) {
-          const { data, error } = await supabase
-            .from('boletins_urna')
-            .select('nm_municipio, nr_zona, nr_secao, qt_comparecimento')
-            .eq('ano_eleicao', ano)
-            .eq('nr_turno', 1)
-            .eq('sg_uf', 'RO')
-            .eq('cd_cargo_pergunta', cargo)
-            .range(page * pageSize, (page + 1) * pageSize - 1)
-
-          if (error) throw error
-          if (!data || data.length === 0) break
-          
-          allData = [...allData, ...data]
-          if (data.length < pageSize) break
-          page++
-        }
-
-        // Agregar por município
-        const municipios: Record<string, number> = {}
-        const secoesVistas = new Set<string>()
-
-        allData.forEach(row => {
-          if (!row.nm_municipio) return
-          
-          const secaoKey = `${row.nm_municipio}-${row.nr_zona}-${row.nr_secao}`
-          if (secoesVistas.has(secaoKey)) return
-          secoesVistas.add(secaoKey)
-
-          if (!municipios[row.nm_municipio]) {
-            municipios[row.nm_municipio] = 0
-          }
-          municipios[row.nm_municipio] += row.qt_comparecimento || 0
+        const { data, error } = await supabase.rpc('get_votos_por_municipio', {
+          p_ano: ano,
+          p_cargo: cargo
         })
 
+        if (error) {
+          console.error(`Erro ao buscar dados de ${ano}:`, error)
+          throw error
+        }
+
+        const municipios: Record<string, number> = {}
+        ;(data || []).forEach((row: any) => {
+          municipios[row.nm_municipio] = row.total_votos
+        })
         return municipios
       }
 
-      // Buscar dados de 2022 da nova tabela votacao_municipio_2022
+      // Buscar dados de 2022 da tabela votacao_municipio_2022 (Governador)
       const getVotos2022Governador = async () => {
         const { data, error } = await supabase
           .from('votacao_municipio_2022')
           .select('nm_municipio, total_votos')
           .eq('ds_cargo', 'GOVERNADOR')
 
-        if (error) throw error
+        if (error) {
+          console.error('Erro ao buscar dados de 2022:', error)
+          throw error
+        }
         
         const municipios: Record<string, number> = {}
         ;(data || []).forEach(row => {
@@ -104,9 +82,9 @@ export default function ComparativoHistorico() {
         return municipios
       }
 
-      // Buscar dados de cada ano
-      // 2020 e 2024: Prefeito (cargo 11) da tabela boletins_urna
-      // 2022: Governador da tabela votacao_municipio_2022 (dados corretos)
+      // Buscar dados de cada ano usando a função RPC correta
+      // 2020 e 2024: Prefeito (cargo 11) usando RPC
+      // 2022: Governador da tabela votacao_municipio_2022
       const [votos2020, votos2022, votos2024] = await Promise.all([
         getVotosPorMunicipio(2020, 11),
         getVotos2022Governador(),
@@ -135,10 +113,18 @@ export default function ComparativoHistorico() {
 
       setDados(dadosCombinados)
       setMunicipiosFiltro(dadosCombinados.map(d => d.municipio).sort())
+      
+      // Calcular totais
+      const total2020 = Object.values(votos2020).reduce((a, b) => a + b, 0)
+      const total2022 = Object.values(votos2022).reduce((a, b) => a + b, 0)
+      const total2024 = Object.values(votos2024).reduce((a, b) => a + b, 0)
+      
+      console.log('Totais calculados:', { total2020, total2022, total2024 })
+      
       setTotais({
-        total_2020: Object.values(votos2020).reduce((a, b) => a + b, 0),
-        total_2022: Object.values(votos2022).reduce((a, b) => a + b, 0),
-        total_2024: Object.values(votos2024).reduce((a, b) => a + b, 0)
+        total_2020: total2020,
+        total_2022: total2022,
+        total_2024: total2024
       })
 
     } catch (error) {
@@ -301,122 +287,95 @@ export default function ComparativoHistorico() {
         </div>
       </div>
 
-      {/* Gráfico de Barras */}
-      <div className="card p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <BarChart3 className="w-5 h-5 text-[var(--accent-color)]" />
-          <h2 className="text-lg font-semibold">Total de Votos por Município (2020, 2022, 2024)</h2>
+      {/* Loading */}
+      {loading ? (
+        <div className="card p-12 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-color)]" />
+          <span className="ml-3">Carregando dados históricos...</span>
         </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center h-96">
-            <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-color)]" />
-            <span className="ml-2">Carregando dados...</span>
+      ) : (
+        <>
+          {/* Gráfico de Barras Horizontal */}
+          <div className="card p-4">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-[var(--accent-color)]" />
+              Total de Votos por Município (2020, 2022, 2024)
+            </h3>
+            <div style={{ height: Math.max(400, dadosGrafico.length * 35) }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  layout="vertical"
+                  data={dadosGrafico}
+                  margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                  <XAxis 
+                    type="number" 
+                    tickFormatter={(value) => value.toLocaleString('pt-BR')}
+                    stroke="var(--text-secondary)"
+                  />
+                  <YAxis 
+                    dataKey="municipio" 
+                    type="category" 
+                    width={95}
+                    tick={{ fontSize: 11 }}
+                    stroke="var(--text-secondary)"
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  <Bar dataKey="votos_2020" name="2020 (Municipal)" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="votos_2022" name="2022 (Geral)" fill="#22c55e" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="votos_2024" name="2024 (Municipal)" fill="#f97316" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        ) : (
-          <div className="h-[600px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={dadosGrafico}
-                layout="vertical"
-                margin={{ top: 20, right: 30, left: 150, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                <XAxis 
-                  type="number" 
-                  tickFormatter={(value) => value.toLocaleString('pt-BR')}
-                  stroke="var(--text-secondary)"
-                />
-                <YAxis 
-                  type="category" 
-                  dataKey="municipio" 
-                  width={140}
-                  tick={{ fontSize: 12 }}
-                  stroke="var(--text-secondary)"
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar 
-                  dataKey="votos_2020" 
-                  name="2020 (Municipal)" 
-                  fill="#3B82F6" 
-                  radius={[0, 4, 4, 0]}
-                />
-                <Bar 
-                  dataKey="votos_2022" 
-                  name="2022 (Geral)" 
-                  fill="#22C55E" 
-                  radius={[0, 4, 4, 0]}
-                />
-                <Bar 
-                  dataKey="votos_2024" 
-                  name="2024 (Municipal)" 
-                  fill="#F97316" 
-                  radius={[0, 4, 4, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </div>
 
-      {/* Tabela Detalhada */}
-      <div className="card p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Building2 className="w-5 h-5 text-[var(--accent-color)]" />
-          <h2 className="text-lg font-semibold">Detalhamento por Município</h2>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[var(--border-color)]">
-                <th className="text-left p-3 font-semibold">#</th>
-                <th className="text-left p-3 font-semibold">Município</th>
-                <th className="text-right p-3 font-semibold">2020</th>
-                <th className="text-right p-3 font-semibold">2022</th>
-                <th className="text-right p-3 font-semibold">2024</th>
-                <th className="text-right p-3 font-semibold">Variação 2020→2024</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dadosGrafico.map((d, idx) => {
-                const variacao = d.votos_2020 > 0 
-                  ? ((d.votos_2024 - d.votos_2020) / d.votos_2020 * 100)
-                  : null
-                
-                return (
-                  <tr key={d.municipio} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-secondary)]/50">
-                    <td className="p-3 text-[var(--text-secondary)]">{idx + 1}</td>
-                    <td className="p-3 font-medium">{d.municipio}</td>
-                    <td className="p-3 text-right text-blue-500 font-medium">
-                      {d.votos_2020 > 0 ? d.votos_2020.toLocaleString('pt-BR') : '-'}
-                    </td>
-                    <td className="p-3 text-right text-green-500 font-medium">
-                      {d.votos_2022 > 0 ? d.votos_2022.toLocaleString('pt-BR') : '-'}
-                    </td>
-                    <td className="p-3 text-right text-orange-500 font-medium">
-                      {d.votos_2024 > 0 ? d.votos_2024.toLocaleString('pt-BR') : '-'}
-                    </td>
-                    <td className="p-3 text-right">
-                      {variacao !== null ? (
-                        <span className={`px-2 py-1 rounded text-sm ${
-                          variacao > 0 ? 'bg-green-500/20 text-green-500' :
-                          variacao < 0 ? 'bg-red-500/20 text-red-500' :
-                          'bg-gray-500/20 text-gray-500'
-                        }`}>
-                          {variacao > 0 ? '+' : ''}{variacao.toFixed(1)}%
-                        </span>
-                      ) : (
-                        <span className="text-[var(--text-secondary)]">-</span>
-                      )}
-                    </td>
+          {/* Tabela de Detalhamento */}
+          <div className="card p-4">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-[var(--accent-color)]" />
+              Detalhamento por Município
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th className="text-left py-3 px-4">Município</th>
+                    <th className="text-right py-3 px-4">2020 (Prefeito)</th>
+                    <th className="text-right py-3 px-4">2022 (Governador)</th>
+                    <th className="text-right py-3 px-4">2024 (Prefeito)</th>
+                    <th className="text-right py-3 px-4">Variação 2020-2024</th>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {dadosGrafico.map((d, i) => {
+                    const variacao = d.votos_2020 > 0 
+                      ? ((d.votos_2024 - d.votos_2020) / d.votos_2020 * 100) 
+                      : 0
+                    return (
+                      <tr key={i} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-secondary)]">
+                        <td className="py-3 px-4 font-medium">{d.municipio}</td>
+                        <td className="text-right py-3 px-4 text-blue-500">{d.votos_2020.toLocaleString('pt-BR')}</td>
+                        <td className="text-right py-3 px-4 text-green-500">{d.votos_2022.toLocaleString('pt-BR')}</td>
+                        <td className="text-right py-3 px-4 text-orange-500">{d.votos_2024.toLocaleString('pt-BR')}</td>
+                        <td className={`text-right py-3 px-4 flex items-center justify-end gap-1 ${variacao >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          <TrendingUp className={`w-4 h-4 ${variacao < 0 ? 'rotate-180' : ''}`} />
+                          {variacao.toFixed(1)}%
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Fonte dos dados */}
+      <div className="text-center text-sm text-[var(--text-secondary)] py-4">
+        Fonte: Tribunal Superior Eleitoral (TSE) - Dados processados pelo DTE
       </div>
     </div>
   )
