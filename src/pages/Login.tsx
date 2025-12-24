@@ -189,13 +189,18 @@ export default function Login() {
               <span>©</span> {new Date().getFullYear()} DATA-RO. Todos os direitos reservados.
             </p>
             <div className="mt-4 flex justify-center">
-              <div className="bg-white rounded-lg p-2 shadow-sm">
+              <a 
+                href="https://dataro-it.com.br" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-white rounded-xl p-3 shadow-md hover:shadow-lg transition-shadow"
+              >
                 <img 
                   src="/logo-dataro.jpeg" 
                   alt="DATA-RO Inteligência Territorial" 
-                  className="h-12 w-auto object-contain"
+                  className="h-20 w-auto object-contain"
                 />
-              </div>
+              </a>
             </div>
           </div>
         </div>
