@@ -1,4 +1,5 @@
-import { ReactNode, useState } from 'react'
+import { useState, ReactNode, useEffect } from 'react'
+import AssistenteDTE from './AssistenteDTE'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme, colorThemes, ColorTheme } from '@/contexts/ThemeContext'
@@ -463,6 +464,9 @@ export default function Layout({ children }: LayoutProps) {
           onClick={() => setColorPickerOpen(false)}
         />
       )}
+
+      {/* Assistente DTE */}
+      <AssistenteDTE />
     </div>
   )
 }
