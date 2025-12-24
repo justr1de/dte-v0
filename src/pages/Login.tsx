@@ -188,6 +188,15 @@ export default function Login() {
             <p className="text-xs text-center text-[var(--text-muted)] mt-4 flex items-center justify-center gap-1">
               <span>©</span> {new Date().getFullYear()} DATA-RO. Todos os direitos reservados.
             </p>
+            <div className="mt-4 flex justify-center">
+              <div className="bg-white rounded-lg p-2 shadow-sm">
+                <img 
+                  src="/logo-dataro.jpeg" 
+                  alt="DATA-RO Inteligência Territorial" 
+                  className="h-12 w-auto object-contain"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
