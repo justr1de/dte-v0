@@ -971,8 +971,7 @@ export default function AssistenteDTE() {
     }
   }
 
-  if (!user) return null
-
+  // Assistente disponível para todos (modo demonstração incluso)
   return (
     <>
       {/* Floating Button */}
