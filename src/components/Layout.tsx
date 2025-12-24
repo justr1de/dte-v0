@@ -41,7 +41,8 @@ import {
   AlertTriangle,
   Trophy,
   ThermometerSun,
-  School
+  School,
+  Info
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -113,6 +114,7 @@ export default function Layout({ children }: LayoutProps) {
         { path: '/documentacao-zonas', icon: MapPin, label: 'Documentação Zonas', roles: ['admin', 'gestor_campanha', 'candidato'] },
         { path: '/importar', icon: Upload, label: 'Importar Dados', roles: ['admin'] },
         { path: '/configuracoes', icon: Settings, label: 'Configurações', roles: ['admin'] },
+        { path: '/sobre', icon: Info, label: 'Sobre o Projeto', roles: ['admin', 'gestor_campanha', 'candidato'] },
       ]
     }
   ]
