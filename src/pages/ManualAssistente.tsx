@@ -22,7 +22,14 @@ import {
   Info,
   Keyboard,
   MousePointer,
-  Zap
+  Zap,
+  MessageSquarePlus,
+  Mail,
+  Phone,
+  Star,
+  ThumbsUp,
+  ThumbsDown,
+  ExternalLink
 } from 'lucide-react'
 
 export default function ManualAssistente() {
@@ -58,6 +65,7 @@ export default function ManualAssistente() {
             { id: 'dicas', label: '6. Dicas e Boas Práticas' },
             { id: 'atalhos', label: '7. Atalhos e Comandos' },
             { id: 'faq', label: '8. Perguntas Frequentes' },
+            { id: 'feedback', label: '9. Feedback e Sugestões' },
           ].map((item) => (
             <a
               key={item.id}
@@ -515,6 +523,154 @@ export default function ManualAssistente() {
               <p className="text-sm text-[var(--text-secondary)] ml-7">{faq.resposta}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* 9. Feedback e Sugestões */}
+      <section id="feedback" className="card p-6 space-y-4">
+        <h2 className="text-2xl font-semibold flex items-center gap-2">
+          <span className="bg-emerald-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">9</span>
+          Feedback e Sugestões
+        </h2>
+        <p className="text-[var(--text-secondary)]">
+          Sua opinião é fundamental para melhorarmos o Assistente DTE. Queremos saber o que está funcionando bem 
+          e o que pode ser aprimorado.
+        </p>
+
+        {/* Como Avaliar */}
+        <div className="p-4 bg-[var(--bg-secondary)] rounded-xl">
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <Star className="w-5 h-5 text-yellow-500" />
+            Como Avaliar as Respostas
+          </h3>
+          <p className="text-sm text-[var(--text-secondary)] mb-4">
+            Ao receber uma resposta do assistente, avalie se ela foi útil:
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="flex items-start gap-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <ThumbsUp className="w-5 h-5 text-green-500 mt-0.5" />
+              <div>
+                <p className="font-medium text-green-500">Resposta Útil</p>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  A informação estava correta e respondeu sua dúvida
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <ThumbsDown className="w-5 h-5 text-red-500 mt-0.5" />
+              <div>
+                <p className="font-medium text-red-500">Resposta Inadequada</p>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  A informação estava incorreta ou incompleta
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tipos de Feedback */}
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="p-4 border border-[var(--border-color)] rounded-xl">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquarePlus className="w-6 h-6 text-blue-500" />
+              <h3 className="font-semibold">Sugerir Funcionalidade</h3>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)]">
+              Tem uma ideia de nova consulta ou recurso? Envie sua sugestão para que possamos avaliar a implementação.
+            </p>
+          </div>
+          <div className="p-4 border border-[var(--border-color)] rounded-xl">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertCircle className="w-6 h-6 text-orange-500" />
+              <h3 className="font-semibold">Reportar Problema</h3>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)]">
+              Encontrou um erro ou comportamento inesperado? Nos informe para que possamos corrigir rapidamente.
+            </p>
+          </div>
+          <div className="p-4 border border-[var(--border-color)] rounded-xl">
+            <div className="flex items-center gap-2 mb-3">
+              <Star className="w-6 h-6 text-yellow-500" />
+              <h3 className="font-semibold">Elogiar</h3>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)]">
+              O assistente te ajudou? Compartilhe sua experiência positiva conosco!
+            </p>
+          </div>
+        </div>
+
+        {/* Canais de Contato */}
+        <div className="p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 rounded-xl">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Mail className="w-5 h-5 text-emerald-500" />
+            Canais de Contato para Feedback
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <a 
+              href="mailto:contato@dataro-it.com.br?subject=Feedback%20Assistente%20DTE" 
+              className="flex items-center gap-3 p-3 bg-[var(--bg-primary)] rounded-lg hover:bg-[var(--bg-secondary)] transition-colors group"
+            >
+              <div className="bg-emerald-500/20 p-2 rounded-lg">
+                <Mail className="w-5 h-5 text-emerald-500" />
+              </div>
+              <div>
+                <p className="font-medium">E-mail</p>
+                <p className="text-sm text-[var(--text-secondary)]">contato@dataro-it.com.br</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-[var(--text-muted)] ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+            </a>
+            <a 
+              href="https://wa.me/5569999089202?text=Olá!%20Gostaria%20de%20enviar%20um%20feedback%20sobre%20o%20Assistente%20DTE" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-3 bg-[var(--bg-primary)] rounded-lg hover:bg-[var(--bg-secondary)] transition-colors group"
+            >
+              <div className="bg-green-500/20 p-2 rounded-lg">
+                <Phone className="w-5 h-5 text-green-500" />
+              </div>
+              <div>
+                <p className="font-medium">WhatsApp</p>
+                <p className="text-sm text-[var(--text-secondary)]">(69) 9 9908-9202</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-[var(--text-muted)] ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+            </a>
+          </div>
+        </div>
+
+        {/* O que incluir no feedback */}
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+          <div className="flex items-center gap-2 text-amber-500 mb-3">
+            <Lightbulb className="w-5 h-5" />
+            <span className="font-semibold">O que incluir no seu feedback</span>
+          </div>
+          <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
+              <span><strong>Descrição clara:</strong> Explique o que aconteceu ou o que você gostaria de ver</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
+              <span><strong>Pergunta feita:</strong> Copie a pergunta que você fez ao assistente</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
+              <span><strong>Resposta recebida:</strong> Se for um problema, inclua a resposta que recebeu</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
+              <span><strong>Resultado esperado:</strong> O que você esperava que acontecesse</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Compromisso */}
+        <div className="text-center p-6 bg-[var(--bg-secondary)] rounded-xl">
+          <h3 className="font-semibold mb-2">Nosso Compromisso</h3>
+          <p className="text-sm text-[var(--text-secondary)] max-w-2xl mx-auto">
+            Todos os feedbacks são lidos e considerados pela equipe de desenvolvimento. 
+            Trabalhamos continuamente para melhorar o Assistente DTE e oferecer a melhor 
+            experiência possível aos usuários do sistema.
+          </p>
         </div>
       </section>
 
