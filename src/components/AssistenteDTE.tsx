@@ -10,7 +10,14 @@ import {
   Maximize2,
   Trash2,
   Copy,
-  Check
+  Check,
+  TrendingUp,
+  MapPin,
+  Users,
+  Target,
+  BarChart3,
+  AlertTriangle,
+  Zap
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -25,15 +32,18 @@ interface Message {
 interface SuggestionChip {
   label: string
   query: string
+  icon?: string
 }
 
 const SUGGESTION_CHIPS: SuggestionChip[] = [
-  { label: '📊 Resumo eleições 2024', query: 'Qual foi o resumo das eleições de 2024?' },
-  { label: '🗳️ Top prefeitos', query: 'Quais foram os prefeitos mais votados em 2024?' },
-  { label: '🏛️ Deputados federais', query: 'Quais os deputados federais eleitos em 2022?' },
-  { label: '📈 Taxa de abstenção', query: 'Qual foi a taxa de abstenção em 2024?' },
-  { label: '🏆 Partidos mais votados', query: 'Quais partidos mais votados em 2024?' },
-  { label: '📍 Dados de Porto Velho', query: 'Mostre dados de Porto Velho' },
+  { label: '📊 Resumo 2024', query: 'Resumo das eleições 2024' },
+  { label: '🎯 Análise territorial', query: 'Análise territorial de Porto Velho' },
+  { label: '👥 Perfil eleitorado', query: 'Perfil do eleitorado de Rondônia' },
+  { label: '📈 Comparativo histórico', query: 'Comparativo de votos 2020 vs 2024' },
+  { label: '🏆 Top candidatos', query: 'Top 10 prefeitos mais votados 2024' },
+  { label: '🗳️ Zonas eleitorais', query: 'Análise por zona eleitoral de Porto Velho' },
+  { label: '⚡ Zonas prioritárias', query: 'Quais são as zonas prioritárias para campanha?' },
+  { label: '📍 Mapa de força', query: 'Mapa de força eleitoral de Ji-Paraná' },
 ]
 
 export default function AssistenteDTE() {
@@ -86,79 +96,79 @@ export default function AssistenteDTE() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  // Função para extrair nome de candidato da query
+  // Função para extrair nome de candidato
   const extractCandidatoName = (query: string): string | null => {
     const lowerQuery = query.toLowerCase()
-    
-    // Nomes específicos conhecidos
-    if (lowerQuery.includes('rafael fera') || lowerQuery.includes('rafael bento')) {
-      return 'RAFAEL FERA'
-    }
-    if (lowerQuery.includes('fernando máximo') || lowerQuery.includes('dr fernando')) {
-      return 'DR FERNANDO MÁXIMO'
-    }
-    if (lowerQuery.includes('silvia cristina')) {
-      return 'SILVIA CRISTINA'
-    }
-    if (lowerQuery.includes('lucio mosquini')) {
-      return 'LUCIO MOSQUINI'
-    }
-    if (lowerQuery.includes('mariana carvalho')) {
-      return 'MARIANA CARVALHO'
-    }
-    if (lowerQuery.includes('marcos rocha')) {
-      return 'MARCOS ROCHA'
-    }
-
-    // Padrões para extrair nomes
-    const patterns = [
-      /sobre\s+(?:o\s+)?(?:candidato\s+)?(?:deputado\s+)?(?:federal\s+)?(?:estadual\s+)?([A-Za-zÀ-ÿ\s]+?)(?:\?|$|,|do\s+|da\s+)/i,
-      /informações\s+(?:sobre\s+)?(?:o\s+)?([A-Za-zÀ-ÿ\s]+?)(?:\?|$|,)/i,
-      /dados\s+(?:de|do|da)\s+([A-Za-zÀ-ÿ\s]+?)(?:\?|$|,)/i,
+    const nomes = [
+      { search: ['rafael fera', 'rafael bento'], name: 'RAFAEL FERA' },
+      { search: ['mariana carvalho'], name: 'MARIANA CARVALHO' },
+      { search: ['marcos rocha'], name: 'MARCOS ROCHA' },
+      { search: ['hildon chaves'], name: 'HILDON CHAVES' },
+      { search: ['léo moraes', 'leo moraes'], name: 'LÉO MORAES' },
+      { search: ['fernando máximo', 'dr fernando'], name: 'DR FERNANDO MÁXIMO' },
+      { search: ['silvia cristina'], name: 'SILVIA CRISTINA' },
+      { search: ['lucio mosquini'], name: 'LUCIO MOSQUINI' },
     ]
-
+    for (const n of nomes) {
+      if (n.search.some(s => lowerQuery.includes(s))) return n.name
+    }
+    
+    const patterns = [
+      /sobre\s+(?:o\s+)?(?:candidato\s+)?([A-Za-zÀ-ÿ\s]+?)(?:\?|$|,|do\s+)/i,
+      /informações\s+(?:de|sobre)\s+([A-Za-zÀ-ÿ\s]+?)(?:\?|$|,)/i,
+      /dados\s+(?:de|do|da)\s+([A-Za-zÀ-ÿ\s]+?)(?:\?|$|,)/i,
+      /votos\s+(?:de|do|da)\s+([A-Za-zÀ-ÿ\s]+?)(?:\?|$|,)/i,
+    ]
     for (const pattern of patterns) {
       const match = query.match(pattern)
-      if (match && match[1]) {
+      if (match && match[1] && match[1].trim().length > 3) {
         const name = match[1].trim()
-        if (name.length > 3 && !['o', 'a', 'os', 'as', 'de', 'da', 'do', 'em', 'no', 'na', 'que', 'como'].includes(name.toLowerCase())) {
+        if (!['o', 'a', 'os', 'as', 'de', 'da', 'do', 'em', 'no', 'na', 'que', 'como', 'qual', 'quais'].includes(name.toLowerCase())) {
           return name.toUpperCase()
         }
       }
     }
-
     return null
   }
 
-  // Função para extrair nome de município
+  // Função para extrair município
   const extractMunicipioName = (query: string): string | null => {
     const municipios = [
       'porto velho', 'ji-paraná', 'ariquemes', 'cacoal', 'vilhena', 'rolim de moura',
       'guajará-mirim', 'jaru', 'ouro preto do oeste', 'pimenta bueno', 'buritis',
-      'nova mamoré', 'machadinho', 'espigão do oeste', 'alta floresta', 'colorado'
+      'nova mamoré', 'machadinho', 'espigão do oeste', 'alta floresta', 'colorado',
+      'cerejeiras', 'são miguel do guaporé', 'presidente médici', 'alto alegre',
+      'candeias do jamari', 'itapuã do oeste', 'nova união', 'mirante da serra',
+      'monte negro', 'cujubim', 'governador jorge teixeira', 'theobroma', 'vale do paraíso',
+      'teixeirópolis', 'urupá', 'primavera de rondônia', 'castanheiras', 'parecis',
+      'alto paraíso', 'são francisco do guaporé', 'seringueiras', 'costa marques',
+      'são felipe do oeste', 'novo horizonte do oeste', 'santa luzia do oeste',
+      'alvorada do oeste', 'campo novo de rondônia', 'cacaulândia', 'chupinguaia',
+      'corumbiara', 'pimenteiras do oeste', 'cabixi', 'ministro andreazza'
     ]
     const lowerQuery = query.toLowerCase()
     for (const municipio of municipios) {
       if (lowerQuery.includes(municipio)) {
-        return municipio.toUpperCase()
+        return municipio.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').toUpperCase()
       }
     }
     return null
   }
 
+  // ==================== FUNÇÕES DE BUSCA ====================
+
   // Buscar candidato específico
   const buscarCandidato = async (nome: string) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('boletins_urna')
-      .select('nm_votavel, sg_partido, nm_municipio, cd_cargo_pergunta, ds_cargo_pergunta, qt_votos, ano_eleicao')
+      .select('nm_votavel, sg_partido, nm_municipio, cd_cargo_pergunta, ds_cargo_pergunta, qt_votos, ano_eleicao, nr_zona')
       .ilike('nm_votavel', `%${nome}%`)
       .eq('sg_uf', 'RO')
       .order('qt_votos', { ascending: false })
-      .limit(500)
+      .limit(1000)
 
-    if (error || !data || data.length === 0) return null
+    if (!data || data.length === 0) return null
 
-    // Agrupar por candidato, cargo e ano
     const candidatoInfo: any = {}
     data.forEach(row => {
       const key = `${row.nm_votavel}-${row.cd_cargo_pergunta}-${row.ano_eleicao}`
@@ -169,80 +179,290 @@ export default function AssistenteDTE() {
           cargo: row.ds_cargo_pergunta,
           ano: row.ano_eleicao,
           totalVotos: 0,
-          votosPorMunicipio: [] as any[]
+          votosPorMunicipio: {} as any,
+          votosPorZona: {} as any
         }
       }
       candidatoInfo[key].totalVotos += row.qt_votos || 0
-      candidatoInfo[key].votosPorMunicipio.push({
-        municipio: row.nm_municipio,
-        votos: row.qt_votos
-      })
-    })
-
-    // Ordenar e limitar municípios
-    Object.values(candidatoInfo).forEach((info: any) => {
-      info.votosPorMunicipio.sort((a: any, b: any) => b.votos - a.votos)
-      info.votosPorMunicipio = info.votosPorMunicipio.slice(0, 10)
+      
+      // Agrupar por município
+      if (!candidatoInfo[key].votosPorMunicipio[row.nm_municipio]) {
+        candidatoInfo[key].votosPorMunicipio[row.nm_municipio] = 0
+      }
+      candidatoInfo[key].votosPorMunicipio[row.nm_municipio] += row.qt_votos || 0
+      
+      // Agrupar por zona
+      const zonaKey = `${row.nm_municipio}-Z${row.nr_zona}`
+      if (!candidatoInfo[key].votosPorZona[zonaKey]) {
+        candidatoInfo[key].votosPorZona[zonaKey] = 0
+      }
+      candidatoInfo[key].votosPorZona[zonaKey] += row.qt_votos || 0
     })
 
     return Object.values(candidatoInfo)
   }
 
-  // Buscar deputados federais
-  const buscarDeputadosFederais = async () => {
-    const { data, error } = await supabase
-      .from('boletins_urna')
-      .select('nm_votavel, sg_partido, qt_votos')
+  // Análise territorial por município
+  const analiseTerritorial = async (municipio: string) => {
+    // Buscar dados de comparecimento
+    const { data: comparecimento } = await supabase
+      .from('comparecimento_abstencao')
+      .select('*')
+      .ilike('nm_municipio', `%${municipio}%`)
       .eq('sg_uf', 'RO')
-      .eq('cd_cargo_pergunta', 6)
-      .eq('ano_eleicao', 2022)
+      .eq('ano_eleicao', 2024)
+      .eq('nr_turno', 1)
+
+    // Buscar top candidatos do município
+    const { data: candidatos } = await supabase
+      .from('boletins_urna')
+      .select('nm_votavel, sg_partido, qt_votos, cd_cargo_pergunta')
+      .ilike('nm_municipio', `%${municipio}%`)
+      .eq('sg_uf', 'RO')
+      .eq('ano_eleicao', 2024)
+      .eq('nr_turno', 1)
       .order('qt_votos', { ascending: false })
-      .limit(1000)
+      .limit(500)
 
-    if (error || !data) return null
+    if (!comparecimento || comparecimento.length === 0) return null
 
-    const deputadoTotals: { [key: string]: { nome: string, partido: string, votos: number } } = {}
-    data.forEach(d => {
-      if (d.nm_votavel && d.nm_votavel !== 'Branco' && d.nm_votavel !== 'Nulo') {
-        if (!deputadoTotals[d.nm_votavel]) {
-          deputadoTotals[d.nm_votavel] = { nome: d.nm_votavel, partido: d.sg_partido, votos: 0 }
+    const totalAptos = comparecimento.reduce((acc, r) => acc + (r.qt_aptos || 0), 0)
+    const totalComparecimento = comparecimento.reduce((acc, r) => acc + (r.qt_comparecimento || 0), 0)
+    const totalAbstencao = comparecimento.reduce((acc, r) => acc + (r.qt_abstencoes || 0), 0)
+
+    // Agrupar candidatos por cargo
+    const prefeitos: any = {}
+    const vereadores: any = {}
+    candidatos?.forEach(c => {
+      if (c.nm_votavel && c.nm_votavel !== 'Branco' && c.nm_votavel !== 'Nulo') {
+        if (c.cd_cargo_pergunta === 11) {
+          if (!prefeitos[c.nm_votavel]) prefeitos[c.nm_votavel] = { nome: c.nm_votavel, partido: c.sg_partido, votos: 0 }
+          prefeitos[c.nm_votavel].votos += c.qt_votos || 0
+        } else if (c.cd_cargo_pergunta === 13) {
+          if (!vereadores[c.nm_votavel]) vereadores[c.nm_votavel] = { nome: c.nm_votavel, partido: c.sg_partido, votos: 0 }
+          vereadores[c.nm_votavel].votos += c.qt_votos || 0
         }
-        deputadoTotals[d.nm_votavel].votos += d.qt_votos || 0
       }
     })
 
-    return Object.values(deputadoTotals).sort((a, b) => b.votos - a.votos).slice(0, 15)
+    return {
+      municipio: comparecimento[0]?.nm_municipio || municipio,
+      eleitorado: {
+        total: totalAptos,
+        comparecimento: totalComparecimento,
+        abstencao: totalAbstencao,
+        taxaParticipacao: totalAptos > 0 ? ((totalComparecimento / totalAptos) * 100).toFixed(1) : '0'
+      },
+      prefeitos: Object.values(prefeitos).sort((a: any, b: any) => b.votos - a.votos).slice(0, 5),
+      vereadores: Object.values(vereadores).sort((a: any, b: any) => b.votos - a.votos).slice(0, 10)
+    }
   }
 
-  // Buscar deputados estaduais
-  const buscarDeputadosEstaduais = async () => {
-    const { data, error } = await supabase
+  // Análise por zona eleitoral
+  const analiseZonaEleitoral = async (municipio: string) => {
+    const { data } = await supabase
       .from('boletins_urna')
-      .select('nm_votavel, sg_partido, qt_votos')
+      .select('nr_zona, nm_votavel, sg_partido, qt_votos, cd_cargo_pergunta')
+      .ilike('nm_municipio', `%${municipio}%`)
       .eq('sg_uf', 'RO')
-      .eq('cd_cargo_pergunta', 7)
-      .eq('ano_eleicao', 2022)
-      .order('qt_votos', { ascending: false })
-      .limit(1000)
+      .eq('ano_eleicao', 2024)
+      .eq('nr_turno', 1)
+      .eq('cd_cargo_pergunta', 11)
+      .order('nr_zona')
+      .limit(2000)
 
-    if (error || !data) return null
+    if (!data || data.length === 0) return null
 
-    const deputadoTotals: { [key: string]: { nome: string, partido: string, votos: number } } = {}
-    data.forEach(d => {
-      if (d.nm_votavel && d.nm_votavel !== 'Branco' && d.nm_votavel !== 'Nulo') {
-        if (!deputadoTotals[d.nm_votavel]) {
-          deputadoTotals[d.nm_votavel] = { nome: d.nm_votavel, partido: d.sg_partido, votos: 0 }
+    const zonas: any = {}
+    data.forEach(row => {
+      if (!zonas[row.nr_zona]) {
+        zonas[row.nr_zona] = { zona: row.nr_zona, candidatos: {}, totalVotos: 0 }
+      }
+      if (row.nm_votavel && row.nm_votavel !== 'Branco' && row.nm_votavel !== 'Nulo') {
+        if (!zonas[row.nr_zona].candidatos[row.nm_votavel]) {
+          zonas[row.nr_zona].candidatos[row.nm_votavel] = { nome: row.nm_votavel, partido: row.sg_partido, votos: 0 }
         }
-        deputadoTotals[d.nm_votavel].votos += d.qt_votos || 0
+        zonas[row.nr_zona].candidatos[row.nm_votavel].votos += row.qt_votos || 0
+        zonas[row.nr_zona].totalVotos += row.qt_votos || 0
       }
     })
 
-    return Object.values(deputadoTotals).sort((a, b) => b.votos - a.votos).slice(0, 15)
+    return Object.values(zonas).map((z: any) => ({
+      zona: z.zona,
+      totalVotos: z.totalVotos,
+      candidatos: Object.values(z.candidatos).sort((a: any, b: any) => b.votos - a.votos).slice(0, 3)
+    }))
   }
 
-  // Buscar prefeitos
-  const buscarPrefeitos = async () => {
-    const { data, error } = await supabase
+  // Zonas prioritárias para campanha
+  const buscarZonasPrioritarias = async () => {
+    const { data } = await supabase
+      .from('comparecimento_abstencao')
+      .select('nr_zona, nm_municipio, qt_aptos, qt_comparecimento, qt_abstencoes')
+      .eq('sg_uf', 'RO')
+      .eq('ano_eleicao', 2024)
+      .eq('nr_turno', 1)
+      .order('qt_aptos', { ascending: false })
+      .limit(100)
+
+    if (!data || data.length === 0) return null
+
+    // Agrupar por zona
+    const zonas: any = {}
+    data.forEach(row => {
+      if (!zonas[row.nr_zona]) {
+        zonas[row.nr_zona] = {
+          zona: row.nr_zona,
+          municipios: [],
+          totalAptos: 0,
+          totalComparecimento: 0,
+          totalAbstencao: 0
+        }
+      }
+      zonas[row.nr_zona].totalAptos += row.qt_aptos || 0
+      zonas[row.nr_zona].totalComparecimento += row.qt_comparecimento || 0
+      zonas[row.nr_zona].totalAbstencao += row.qt_abstencoes || 0
+      if (!zonas[row.nr_zona].municipios.includes(row.nm_municipio)) {
+        zonas[row.nr_zona].municipios.push(row.nm_municipio)
+      }
+    })
+
+    // Calcular métricas e classificar
+    const zonasArray = Object.values(zonas).map((z: any) => {
+      const taxaParticipacao = z.totalAptos > 0 ? (z.totalComparecimento / z.totalAptos) * 100 : 0
+      const taxaAbstencao = z.totalAptos > 0 ? (z.totalAbstencao / z.totalAptos) * 100 : 0
+      
+      let prioridade = 'MÉDIA'
+      let motivo = ''
+      
+      if (z.totalAptos > 50000 && taxaParticipacao < 75) {
+        prioridade = 'ALTA'
+        motivo = 'Grande eleitorado com participação abaixo da média'
+      } else if (taxaAbstencao > 28) {
+        prioridade = 'ALTA'
+        motivo = 'Alta taxa de abstenção - potencial de mobilização'
+      } else if (z.totalAptos > 30000) {
+        prioridade = 'MÉDIA-ALTA'
+        motivo = 'Eleitorado significativo'
+      }
+
+      return {
+        ...z,
+        taxaParticipacao: taxaParticipacao.toFixed(1),
+        taxaAbstencao: taxaAbstencao.toFixed(1),
+        prioridade,
+        motivo
+      }
+    })
+
+    return zonasArray.sort((a: any, b: any) => b.totalAptos - a.totalAptos)
+  }
+
+  // Mapa de força eleitoral
+  const mapaForcaEleitoral = async (municipio: string) => {
+    // Buscar votos por candidato e zona
+    const { data: votos } = await supabase
+      .from('boletins_urna')
+      .select('nr_zona, nr_secao, nm_votavel, sg_partido, qt_votos')
+      .ilike('nm_municipio', `%${municipio}%`)
+      .eq('sg_uf', 'RO')
+      .eq('ano_eleicao', 2024)
+      .eq('nr_turno', 1)
+      .eq('cd_cargo_pergunta', 11)
+      .limit(3000)
+
+    // Buscar comparecimento
+    const { data: comparecimento } = await supabase
+      .from('comparecimento_abstencao')
+      .select('nr_zona, qt_aptos, qt_comparecimento')
+      .ilike('nm_municipio', `%${municipio}%`)
+      .eq('sg_uf', 'RO')
+      .eq('ano_eleicao', 2024)
+      .eq('nr_turno', 1)
+
+    if (!votos || votos.length === 0) return null
+
+    // Agrupar por zona
+    const zonas: any = {}
+    votos.forEach(v => {
+      if (!zonas[v.nr_zona]) {
+        zonas[v.nr_zona] = { zona: v.nr_zona, candidatos: {}, totalVotos: 0 }
+      }
+      if (v.nm_votavel && v.nm_votavel !== 'Branco' && v.nm_votavel !== 'Nulo') {
+        if (!zonas[v.nr_zona].candidatos[v.nm_votavel]) {
+          zonas[v.nr_zona].candidatos[v.nm_votavel] = { nome: v.nm_votavel, partido: v.sg_partido, votos: 0 }
+        }
+        zonas[v.nr_zona].candidatos[v.nm_votavel].votos += v.qt_votos || 0
+        zonas[v.nr_zona].totalVotos += v.qt_votos || 0
+      }
+    })
+
+    // Adicionar dados de comparecimento
+    comparecimento?.forEach(c => {
+      if (zonas[c.nr_zona]) {
+        zonas[c.nr_zona].eleitores = c.qt_aptos
+        zonas[c.nr_zona].comparecimento = c.qt_comparecimento
+      }
+    })
+
+    // Analisar força por zona
+    return Object.values(zonas).map((z: any) => {
+      const candidatosOrdenados = Object.values(z.candidatos).sort((a: any, b: any) => b.votos - a.votos)
+      const lider = candidatosOrdenados[0] as any
+      const segundo = candidatosOrdenados[1] as any
+      
+      const vantagem = lider && segundo ? ((lider.votos - segundo.votos) / z.totalVotos * 100).toFixed(1) : '100'
+      const dominio = lider ? ((lider.votos / z.totalVotos) * 100).toFixed(1) : '0'
+
+      return {
+        zona: z.zona,
+        eleitores: z.eleitores || 0,
+        totalVotos: z.totalVotos,
+        lider: lider?.nome || 'N/A',
+        partidoLider: lider?.partido || 'N/A',
+        votosLider: lider?.votos || 0,
+        dominio: dominio,
+        vantagem: vantagem,
+        segundo: segundo?.nome || 'N/A',
+        votosSegundo: segundo?.votos || 0
+      }
+    }).sort((a: any, b: any) => b.eleitores - a.eleitores)
+  }
+
+  // Comparativo histórico
+  const comparativoHistorico = async (municipio?: string) => {
+    const anos = [2020, 2024]
+    const resultados: any = {}
+
+    for (const ano of anos) {
+      let query = supabase
+        .from('comparecimento_abstencao')
+        .select('qt_aptos, qt_comparecimento, qt_abstencoes')
+        .eq('sg_uf', 'RO')
+        .eq('ano_eleicao', ano)
+        .eq('nr_turno', 1)
+
+      if (municipio) {
+        query = query.ilike('nm_municipio', `%${municipio}%`)
+      }
+
+      const { data } = await query.limit(100)
+
+      if (data) {
+        resultados[ano] = {
+          eleitores: data.reduce((acc, r) => acc + (r.qt_aptos || 0), 0),
+          comparecimento: data.reduce((acc, r) => acc + (r.qt_comparecimento || 0), 0),
+          abstencao: data.reduce((acc, r) => acc + (r.qt_abstencoes || 0), 0)
+        }
+      }
+    }
+
+    return resultados
+  }
+
+  // Top prefeitos 2024
+  const buscarTopPrefeitos = async (limite: number = 10) => {
+    const { data } = await supabase
       .from('boletins_urna')
       .select('nm_votavel, sg_partido, nm_municipio, qt_votos')
       .eq('sg_uf', 'RO')
@@ -252,9 +472,9 @@ export default function AssistenteDTE() {
       .order('qt_votos', { ascending: false })
       .limit(500)
 
-    if (error || !data) return null
+    if (!data) return null
 
-    const prefTotals: { [key: string]: { nome: string, partido: string, municipio: string, votos: number } } = {}
+    const prefTotals: any = {}
     data.forEach(p => {
       if (p.nm_votavel && p.nm_votavel !== 'Branco' && p.nm_votavel !== 'Nulo') {
         const key = `${p.nm_votavel}-${p.nm_municipio}`
@@ -265,12 +485,123 @@ export default function AssistenteDTE() {
       }
     })
 
-    return Object.values(prefTotals).sort((a, b) => b.votos - a.votos).slice(0, 10)
+    return Object.values(prefTotals).sort((a: any, b: any) => b.votos - a.votos).slice(0, limite)
   }
 
-  // Buscar resumo 2024
+  // Top vereadores 2024
+  const buscarTopVereadores = async (municipio?: string, limite: number = 10) => {
+    let query = supabase
+      .from('boletins_urna')
+      .select('nm_votavel, sg_partido, nm_municipio, qt_votos')
+      .eq('sg_uf', 'RO')
+      .eq('cd_cargo_pergunta', 13)
+      .eq('ano_eleicao', 2024)
+      .eq('nr_turno', 1)
+      .order('qt_votos', { ascending: false })
+
+    if (municipio) {
+      query = query.ilike('nm_municipio', `%${municipio}%`)
+    }
+
+    const { data } = await query.limit(500)
+
+    if (!data) return null
+
+    const verTotals: any = {}
+    data.forEach(v => {
+      if (v.nm_votavel && v.nm_votavel !== 'Branco' && v.nm_votavel !== 'Nulo') {
+        const key = `${v.nm_votavel}-${v.nm_municipio}`
+        if (!verTotals[key]) {
+          verTotals[key] = { nome: v.nm_votavel, partido: v.sg_partido, municipio: v.nm_municipio, votos: 0 }
+        }
+        verTotals[key].votos += v.qt_votos || 0
+      }
+    })
+
+    return Object.values(verTotals).sort((a: any, b: any) => b.votos - a.votos).slice(0, limite)
+  }
+
+  // Deputados federais
+  const buscarDeputadosFederais = async () => {
+    const { data } = await supabase
+      .from('boletins_urna')
+      .select('nm_votavel, sg_partido, qt_votos')
+      .eq('sg_uf', 'RO')
+      .eq('cd_cargo_pergunta', 6)
+      .eq('ano_eleicao', 2022)
+      .order('qt_votos', { ascending: false })
+      .limit(1000)
+
+    if (!data) return null
+
+    const deputadoTotals: any = {}
+    data.forEach(d => {
+      if (d.nm_votavel && d.nm_votavel !== 'Branco' && d.nm_votavel !== 'Nulo') {
+        if (!deputadoTotals[d.nm_votavel]) {
+          deputadoTotals[d.nm_votavel] = { nome: d.nm_votavel, partido: d.sg_partido, votos: 0 }
+        }
+        deputadoTotals[d.nm_votavel].votos += d.qt_votos || 0
+      }
+    })
+
+    return Object.values(deputadoTotals).sort((a: any, b: any) => b.votos - a.votos).slice(0, 15)
+  }
+
+  // Deputados estaduais
+  const buscarDeputadosEstaduais = async () => {
+    const { data } = await supabase
+      .from('boletins_urna')
+      .select('nm_votavel, sg_partido, qt_votos')
+      .eq('sg_uf', 'RO')
+      .eq('cd_cargo_pergunta', 7)
+      .eq('ano_eleicao', 2022)
+      .order('qt_votos', { ascending: false })
+      .limit(1000)
+
+    if (!data) return null
+
+    const deputadoTotals: any = {}
+    data.forEach(d => {
+      if (d.nm_votavel && d.nm_votavel !== 'Branco' && d.nm_votavel !== 'Nulo') {
+        if (!deputadoTotals[d.nm_votavel]) {
+          deputadoTotals[d.nm_votavel] = { nome: d.nm_votavel, partido: d.sg_partido, votos: 0 }
+        }
+        deputadoTotals[d.nm_votavel].votos += d.qt_votos || 0
+      }
+    })
+
+    return Object.values(deputadoTotals).sort((a: any, b: any) => b.votos - a.votos).slice(0, 15)
+  }
+
+  // Governador 2022
+  const buscarGovernador = async () => {
+    const { data } = await supabase
+      .from('boletins_urna')
+      .select('nm_votavel, sg_partido, qt_votos')
+      .eq('sg_uf', 'RO')
+      .eq('cd_cargo_pergunta', 3)
+      .eq('ano_eleicao', 2022)
+      .order('qt_votos', { ascending: false })
+      .limit(500)
+
+    if (!data) return null
+
+    const govTotals: any = {}
+    data.forEach(g => {
+      if (g.nm_votavel && g.nm_votavel !== 'Branco' && g.nm_votavel !== 'Nulo') {
+        if (!govTotals[g.nm_votavel]) {
+          govTotals[g.nm_votavel] = { nome: g.nm_votavel, partido: g.sg_partido, votos: 0 }
+        }
+        govTotals[g.nm_votavel].votos += g.qt_votos || 0
+      }
+    })
+
+    return Object.values(govTotals).sort((a: any, b: any) => b.votos - a.votos).slice(0, 10)
+  }
+
+  // Resumo geral 2024
   const buscarResumo2024 = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('comparecimento_abstencao')
       .select('qt_aptos, qt_comparecimento, qt_abstencoes')
       .eq('sg_uf', 'RO')
@@ -278,23 +609,18 @@ export default function AssistenteDTE() {
       .eq('nr_turno', 1)
       .limit(100)
 
-    if (error || !data) return null
-
-    const totalAptos = data.reduce((acc, r) => acc + (r.qt_aptos || 0), 0)
-    const totalComparecimento = data.reduce((acc, r) => acc + (r.qt_comparecimento || 0), 0)
-    const totalAbstencao = data.reduce((acc, r) => acc + (r.qt_abstencoes || 0), 0)
+    if (!data) return null
 
     return {
-      totalEleitores: totalAptos,
-      comparecimento: totalComparecimento,
-      abstencoes: totalAbstencao,
-      taxaParticipacao: totalAptos > 0 ? ((totalComparecimento / totalAptos) * 100).toFixed(1) : '0'
+      totalEleitores: data.reduce((acc, r) => acc + (r.qt_aptos || 0), 0),
+      comparecimento: data.reduce((acc, r) => acc + (r.qt_comparecimento || 0), 0),
+      abstencoes: data.reduce((acc, r) => acc + (r.qt_abstencoes || 0), 0)
     }
   }
 
-  // Buscar partidos
+  // Partidos mais votados
   const buscarPartidos = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('boletins_urna')
       .select('sg_partido, qt_votos')
       .eq('sg_uf', 'RO')
@@ -303,7 +629,7 @@ export default function AssistenteDTE() {
       .eq('nr_turno', 1)
       .limit(5000)
 
-    if (error || !data) return null
+    if (!data) return null
 
     const partidoTotals: { [key: string]: number } = {}
     data.forEach(p => {
@@ -318,70 +644,15 @@ export default function AssistenteDTE() {
       .map(([partido, votos]) => ({ partido, votos }))
   }
 
-  // Buscar município
-  const buscarMunicipio = async (nome: string) => {
-    const { data, error } = await supabase
-      .from('comparecimento_abstencao')
-      .select('nm_municipio, qt_aptos, qt_comparecimento, qt_abstencoes')
-      .eq('sg_uf', 'RO')
-      .ilike('nm_municipio', `%${nome}%`)
-      .eq('ano_eleicao', 2024)
-      .eq('nr_turno', 1)
-      .limit(10)
+  // ==================== PROCESSAMENTO DE CONSULTAS ====================
 
-    if (error || !data || data.length === 0) return null
-
-    const totalAptos = data.reduce((acc, r) => acc + (r.qt_aptos || 0), 0)
-    const totalComparecimento = data.reduce((acc, r) => acc + (r.qt_comparecimento || 0), 0)
-    const totalAbstencao = data.reduce((acc, r) => acc + (r.qt_abstencoes || 0), 0)
-
-    return {
-      nome: data[0].nm_municipio,
-      totalEleitores: totalAptos,
-      comparecimento: totalComparecimento,
-      abstencoes: totalAbstencao,
-      taxaParticipacao: totalAptos > 0 ? ((totalComparecimento / totalAptos) * 100).toFixed(1) : '0'
-    }
-  }
-
-  // Buscar governador
-  const buscarGovernador = async () => {
-    const { data, error } = await supabase
-      .from('boletins_urna')
-      .select('nm_votavel, sg_partido, qt_votos, nr_turno')
-      .eq('sg_uf', 'RO')
-      .eq('cd_cargo_pergunta', 3)
-      .eq('ano_eleicao', 2022)
-      .order('qt_votos', { ascending: false })
-      .limit(500)
-
-    if (error || !data) return null
-
-    const govTotals: { [key: string]: { nome: string, partido: string, votos1t: number, votos2t: number } } = {}
-    data.forEach(g => {
-      if (g.nm_votavel && g.nm_votavel !== 'Branco' && g.nm_votavel !== 'Nulo') {
-        if (!govTotals[g.nm_votavel]) {
-          govTotals[g.nm_votavel] = { nome: g.nm_votavel, partido: g.sg_partido, votos1t: 0, votos2t: 0 }
-        }
-        if (g.nr_turno === 1) {
-          govTotals[g.nm_votavel].votos1t += g.qt_votos || 0
-        } else {
-          govTotals[g.nm_votavel].votos2t += g.qt_votos || 0
-        }
-      }
-    })
-
-    return Object.values(govTotals).sort((a, b) => (b.votos1t + b.votos2t) - (a.votos1t + a.votos2t))
-  }
-
-  // Processar a consulta e gerar resposta
   const processarConsulta = async (query: string): Promise<string> => {
     const lowerQuery = query.toLowerCase()
 
     try {
-      // Verificar se é busca por candidato específico
+      // Candidato específico
       const candidatoNome = extractCandidatoName(query)
-      if (candidatoNome) {
+      if (candidatoNome && !lowerQuery.includes('prefeito') && !lowerQuery.includes('vereador') && !lowerQuery.includes('top')) {
         const candidatos = await buscarCandidato(candidatoNome)
         if (candidatos && candidatos.length > 0) {
           let response = ''
@@ -392,13 +663,170 @@ export default function AssistenteDTE() {
             response += `📅 **Ano:** ${c.ano}\n`
             response += `🗳️ **Total de Votos:** ${c.totalVotos.toLocaleString('pt-BR')}\n\n`
             
-            if (c.votosPorMunicipio && c.votosPorMunicipio.length > 0) {
+            const municipios = Object.entries(c.votosPorMunicipio)
+              .sort((a: any, b: any) => b[1] - a[1])
+              .slice(0, 5)
+            
+            if (municipios.length > 0) {
               response += `📍 **Top Municípios:**\n`
-              c.votosPorMunicipio.slice(0, 5).forEach((m: any, i: number) => {
-                response += `${i + 1}. ${m.municipio}: ${m.votos.toLocaleString('pt-BR')} votos\n`
+              municipios.forEach(([mun, votos]: any, i: number) => {
+                const pct = ((votos / c.totalVotos) * 100).toFixed(1)
+                response += `${i + 1}. ${mun}: ${votos.toLocaleString('pt-BR')} votos (${pct}%)\n`
               })
             }
-            response += '\n---\n\n'
+            response += '\n'
+          })
+          return response
+        }
+      }
+
+      // Zonas prioritárias
+      if (lowerQuery.includes('zona') && (lowerQuery.includes('prioritária') || lowerQuery.includes('prioritaria') || lowerQuery.includes('prioridade'))) {
+        const zonas = await buscarZonasPrioritarias()
+        if (zonas && zonas.length > 0) {
+          let response = `⚡ **Zonas Prioritárias para Campanha - RO 2024**\n\n`
+          response += `*Análise baseada em eleitorado e taxa de participação*\n\n`
+          
+          const altaPrioridade = zonas.filter((z: any) => z.prioridade === 'ALTA')
+          const mediaAlta = zonas.filter((z: any) => z.prioridade === 'MÉDIA-ALTA')
+          
+          if (altaPrioridade.length > 0) {
+            response += `🔴 **ALTA PRIORIDADE:**\n`
+            altaPrioridade.slice(0, 5).forEach((z: any) => {
+              response += `• **Zona ${z.zona}** (${z.municipios.slice(0, 2).join(', ')})\n`
+              response += `  Eleitores: ${z.totalAptos.toLocaleString('pt-BR')} | Participação: ${z.taxaParticipacao}%\n`
+              response += `  📌 ${z.motivo}\n\n`
+            })
+          }
+          
+          if (mediaAlta.length > 0) {
+            response += `🟡 **MÉDIA-ALTA PRIORIDADE:**\n`
+            mediaAlta.slice(0, 5).forEach((z: any) => {
+              response += `• **Zona ${z.zona}** (${z.municipios.slice(0, 2).join(', ')})\n`
+              response += `  Eleitores: ${z.totalAptos.toLocaleString('pt-BR')} | Participação: ${z.taxaParticipacao}%\n\n`
+            })
+          }
+          
+          response += `\n💡 **Recomendação:** Foque recursos nas zonas de alta prioridade - grande eleitorado com potencial de mobilização.`
+          return response
+        }
+      }
+
+      // Mapa de força
+      if (lowerQuery.includes('mapa') && lowerQuery.includes('força') || lowerQuery.includes('força eleitoral')) {
+        const municipio = extractMunicipioName(query) || 'PORTO VELHO'
+        const mapa = await mapaForcaEleitoral(municipio)
+        if (mapa && mapa.length > 0) {
+          let response = `🗺️ **Mapa de Força Eleitoral - ${municipio}**\n\n`
+          response += `*Análise por zona eleitoral - Prefeito 2024*\n\n`
+          
+          mapa.forEach((z: any) => {
+            const emoji = parseFloat(z.dominio) > 50 ? '🟢' : parseFloat(z.dominio) > 40 ? '🟡' : '🔴'
+            response += `${emoji} **Zona ${z.zona}** (${z.eleitores.toLocaleString('pt-BR')} eleitores)\n`
+            response += `   Líder: **${z.lider}** (${z.partidoLider}) - ${z.dominio}% dos votos\n`
+            response += `   2º lugar: ${z.segundo} - Vantagem: ${z.vantagem}pp\n\n`
+          })
+          
+          response += `\n📊 **Legenda:** 🟢 Domínio forte (>50%) | 🟡 Disputa acirrada | 🔴 Zona disputada`
+          return response
+        }
+      }
+
+      // Análise territorial
+      if (lowerQuery.includes('análise territorial') || lowerQuery.includes('analise territorial')) {
+        const municipio = extractMunicipioName(query) || 'PORTO VELHO'
+        const analise = await analiseTerritorial(municipio)
+        if (analise) {
+          let response = `🎯 **Análise Territorial - ${analise.municipio}**\n\n`
+          response += `👥 **Eleitorado:**\n`
+          response += `- Total de Eleitores: ${analise.eleitorado.total.toLocaleString('pt-BR')}\n`
+          response += `- Comparecimento: ${analise.eleitorado.comparecimento.toLocaleString('pt-BR')} (${analise.eleitorado.taxaParticipacao}%)\n`
+          response += `- Abstenção: ${analise.eleitorado.abstencao.toLocaleString('pt-BR')}\n\n`
+          
+          if (analise.prefeitos.length > 0) {
+            response += `🏆 **Top Candidatos a Prefeito:**\n`
+            analise.prefeitos.forEach((p: any, i: number) => {
+              response += `${i + 1}. ${p.nome} (${p.partido}) - ${p.votos.toLocaleString('pt-BR')} votos\n`
+            })
+            response += '\n'
+          }
+          
+          if (analise.vereadores.length > 0) {
+            response += `📋 **Top 10 Vereadores:**\n`
+            analise.vereadores.forEach((v: any, i: number) => {
+              response += `${i + 1}. ${v.nome} (${v.partido}) - ${v.votos.toLocaleString('pt-BR')} votos\n`
+            })
+          }
+          
+          return response
+        }
+      }
+
+      // Análise por zona eleitoral
+      if (lowerQuery.includes('zona eleitoral') || lowerQuery.includes('zonas eleitorais')) {
+        const municipio = extractMunicipioName(query) || 'PORTO VELHO'
+        const zonas = await analiseZonaEleitoral(municipio)
+        if (zonas && zonas.length > 0) {
+          let response = `🗳️ **Análise por Zona Eleitoral - ${municipio}**\n\n`
+          zonas.forEach((z: any) => {
+            response += `**Zona ${z.zona}** (${z.totalVotos.toLocaleString('pt-BR')} votos):\n`
+            z.candidatos.forEach((c: any, i: number) => {
+              const pct = ((c.votos / z.totalVotos) * 100).toFixed(1)
+              response += `  ${i + 1}. ${c.nome} (${c.partido}): ${c.votos.toLocaleString('pt-BR')} (${pct}%)\n`
+            })
+            response += '\n'
+          })
+          return response
+        }
+      }
+
+      // Comparativo histórico
+      if (lowerQuery.includes('comparativo') || lowerQuery.includes('histórico') || lowerQuery.includes('2020 vs 2024')) {
+        const municipio = extractMunicipioName(query)
+        const comparativo = await comparativoHistorico(municipio || undefined)
+        if (comparativo && comparativo[2020] && comparativo[2024]) {
+          const crescimento = ((comparativo[2024].eleitores - comparativo[2020].eleitores) / comparativo[2020].eleitores * 100).toFixed(1)
+          const varParticipacao = (
+            (comparativo[2024].comparecimento / comparativo[2024].eleitores * 100) -
+            (comparativo[2020].comparecimento / comparativo[2020].eleitores * 100)
+          ).toFixed(1)
+          
+          let response = `📈 **Comparativo Histórico${municipio ? ` - ${municipio}` : ' - Rondônia'}**\n\n`
+          response += `| Métrica | 2020 | 2024 | Variação |\n`
+          response += `|---------|------|------|----------|\n`
+          response += `| Eleitores | ${comparativo[2020].eleitores.toLocaleString('pt-BR')} | ${comparativo[2024].eleitores.toLocaleString('pt-BR')} | ${crescimento}% |\n`
+          response += `| Comparecimento | ${comparativo[2020].comparecimento.toLocaleString('pt-BR')} | ${comparativo[2024].comparecimento.toLocaleString('pt-BR')} | - |\n`
+          response += `| Abstenção | ${comparativo[2020].abstencao.toLocaleString('pt-BR')} | ${comparativo[2024].abstencao.toLocaleString('pt-BR')} | - |\n\n`
+          response += `📊 **Análise:**\n`
+          response += `- Crescimento do eleitorado: **${crescimento}%**\n`
+          response += `- Variação na participação: **${varParticipacao}pp**\n`
+          
+          return response
+        }
+      }
+
+      // Top prefeitos
+      if ((lowerQuery.includes('prefeito') && lowerQuery.includes('top')) || lowerQuery.includes('mais votado')) {
+        const prefeitos = await buscarTopPrefeitos(10)
+        if (prefeitos && prefeitos.length > 0) {
+          let response = `🏆 **Top 10 Prefeitos Mais Votados - 2024 RO**\n\n`
+          prefeitos.forEach((p: any, i: number) => {
+            response += `${i + 1}. **${p.nome}** (${p.partido})\n`
+            response += `   📍 ${p.municipio} - ${p.votos.toLocaleString('pt-BR')} votos\n\n`
+          })
+          return response
+        }
+      }
+
+      // Vereadores
+      if (lowerQuery.includes('vereador') || lowerQuery.includes('vereadores')) {
+        const municipio = extractMunicipioName(query)
+        const vereadores = await buscarTopVereadores(municipio || undefined, 15)
+        if (vereadores && vereadores.length > 0) {
+          let response = `📋 **Top Vereadores${municipio ? ` - ${municipio}` : ''} - 2024 RO**\n\n`
+          vereadores.forEach((v: any, i: number) => {
+            response += `${i + 1}. **${v.nome}** (${v.partido})\n`
+            response += `   📍 ${v.municipio} - ${v.votos.toLocaleString('pt-BR')} votos\n\n`
           })
           return response
         }
@@ -407,11 +835,12 @@ export default function AssistenteDTE() {
       // Deputados federais
       if (lowerQuery.includes('deputado federal') || lowerQuery.includes('deputados federais')) {
         const deputados = await buscarDeputadosFederais()
-        if (deputados) {
-          let response = `🏛️ **Top Deputados Federais - Eleições 2022 RO**\n\n`
-          deputados.slice(0, 10).forEach((d: any, i: number) => {
+        if (deputados && deputados.length > 0) {
+          let response = `🏛️ **Deputados Federais - Eleições 2022 RO**\n\n`
+          deputados.forEach((d: any, i: number) => {
             const eleito = i < 8 ? ' ✅' : ''
-            response += `${i + 1}. **${d.nome}** (${d.partido})${eleito}\n   📊 ${d.votos.toLocaleString('pt-BR')} votos\n\n`
+            response += `${i + 1}. **${d.nome}** (${d.partido})${eleito}\n`
+            response += `   📊 ${d.votos.toLocaleString('pt-BR')} votos\n\n`
           })
           response += `\n*Rondônia elegeu 8 deputados federais em 2022.*`
           return response
@@ -421,10 +850,11 @@ export default function AssistenteDTE() {
       // Deputados estaduais
       if (lowerQuery.includes('deputado estadual') || lowerQuery.includes('deputados estaduais')) {
         const deputados = await buscarDeputadosEstaduais()
-        if (deputados) {
-          let response = `🏛️ **Top Deputados Estaduais - Eleições 2022 RO**\n\n`
-          deputados.slice(0, 10).forEach((d: any, i: number) => {
-            response += `${i + 1}. **${d.nome}** (${d.partido})\n   📊 ${d.votos.toLocaleString('pt-BR')} votos\n\n`
+        if (deputados && deputados.length > 0) {
+          let response = `🏛️ **Deputados Estaduais - Eleições 2022 RO**\n\n`
+          deputados.forEach((d: any, i: number) => {
+            response += `${i + 1}. **${d.nome}** (${d.partido})\n`
+            response += `   📊 ${d.votos.toLocaleString('pt-BR')} votos\n\n`
           })
           return response
         }
@@ -433,38 +863,13 @@ export default function AssistenteDTE() {
       // Governador
       if (lowerQuery.includes('governador')) {
         const governadores = await buscarGovernador()
-        if (governadores) {
+        if (governadores && governadores.length > 0) {
           let response = `🏛️ **Eleição para Governador - 2022 RO**\n\n`
-          governadores.slice(0, 5).forEach((g: any, i: number) => {
+          governadores.forEach((g: any, i: number) => {
             response += `${i + 1}. **${g.nome}** (${g.partido})\n`
-            response += `   📊 1º Turno: ${g.votos1t.toLocaleString('pt-BR')} votos\n`
-            if (g.votos2t > 0) {
-              response += `   📊 2º Turno: ${g.votos2t.toLocaleString('pt-BR')} votos\n`
-            }
-            response += '\n'
+            response += `   📊 ${g.votos.toLocaleString('pt-BR')} votos\n\n`
           })
           return response
-        }
-      }
-
-      // Prefeitos
-      if (lowerQuery.includes('prefeito') || lowerQuery.includes('top')) {
-        const prefeitos = await buscarPrefeitos()
-        if (prefeitos) {
-          let response = `🏆 **Top 10 Prefeitos Mais Votados - 2024 RO**\n\n`
-          prefeitos.forEach((p: any, i: number) => {
-            response += `${i + 1}. **${p.nome}** (${p.partido}) - ${p.municipio}\n   📊 ${p.votos.toLocaleString('pt-BR')} votos\n\n`
-          })
-          return response
-        }
-      }
-
-      // Município específico
-      const municipioNome = extractMunicipioName(query)
-      if (municipioNome) {
-        const municipio = await buscarMunicipio(municipioNome)
-        if (municipio) {
-          return `📍 **${municipio.nome} - Eleições 2024**\n\n🗳️ **Eleitorado:**\n- Total de Eleitores: ${municipio.totalEleitores.toLocaleString('pt-BR')}\n- Comparecimento: ${municipio.comparecimento.toLocaleString('pt-BR')} (${municipio.taxaParticipacao}%)\n- Abstenções: ${municipio.abstencoes.toLocaleString('pt-BR')}`
         }
       }
 
@@ -480,12 +885,24 @@ export default function AssistenteDTE() {
         }
       }
 
-      // Abstenção
-      if (lowerQuery.includes('abstenção') || lowerQuery.includes('participação')) {
-        const resumo = await buscarResumo2024()
-        if (resumo) {
-          const taxaAbstencao = (100 - parseFloat(resumo.taxaParticipacao)).toFixed(1)
-          return `📈 **Taxa de Participação - Eleições 2024 RO**\n\n✅ **Comparecimento:** ${resumo.comparecimento.toLocaleString('pt-BR')} eleitores (${resumo.taxaParticipacao}%)\n❌ **Abstenções:** ${resumo.abstencoes.toLocaleString('pt-BR')} eleitores (${taxaAbstencao}%)\n\n📊 **Total de Eleitores Aptos:** ${resumo.totalEleitores.toLocaleString('pt-BR')}`
+      // Município específico
+      const municipioNome = extractMunicipioName(query)
+      if (municipioNome && !lowerQuery.includes('análise') && !lowerQuery.includes('zona') && !lowerQuery.includes('mapa')) {
+        const analise = await analiseTerritorial(municipioNome)
+        if (analise) {
+          let response = `📍 **${analise.municipio} - Eleições 2024**\n\n`
+          response += `👥 **Eleitorado:**\n`
+          response += `- Total: ${analise.eleitorado.total.toLocaleString('pt-BR')}\n`
+          response += `- Comparecimento: ${analise.eleitorado.comparecimento.toLocaleString('pt-BR')} (${analise.eleitorado.taxaParticipacao}%)\n`
+          response += `- Abstenção: ${analise.eleitorado.abstencao.toLocaleString('pt-BR')}\n\n`
+          
+          if (analise.prefeitos.length > 0) {
+            response += `🏆 **Candidatos a Prefeito:**\n`
+            analise.prefeitos.forEach((p: any, i: number) => {
+              response += `${i + 1}. ${p.nome} (${p.partido}) - ${p.votos.toLocaleString('pt-BR')} votos\n`
+            })
+          }
+          return response
         }
       }
 
@@ -493,12 +910,13 @@ export default function AssistenteDTE() {
       if (lowerQuery.includes('resumo') || lowerQuery.includes('2024') || lowerQuery.includes('eleições')) {
         const resumo = await buscarResumo2024()
         if (resumo) {
-          return `📊 **Resumo das Eleições 2024 - Rondônia (1º Turno)**\n\n🗳️ **Participação Eleitoral:**\n- Total de Eleitores: ${resumo.totalEleitores.toLocaleString('pt-BR')}\n- Comparecimento: ${resumo.comparecimento.toLocaleString('pt-BR')} (${resumo.taxaParticipacao}%)\n- Abstenções: ${resumo.abstencoes.toLocaleString('pt-BR')}\n\n📍 **Abrangência:**\n- 52 municípios\n- 29 zonas eleitorais\n\n💡 *Para consultas mais detalhadas, pergunte sobre candidatos específicos, partidos ou municípios!*`
+          const taxaParticipacao = ((resumo.comparecimento / resumo.totalEleitores) * 100).toFixed(1)
+          return `📊 **Resumo das Eleições 2024 - Rondônia (1º Turno)**\n\n🗳️ **Participação Eleitoral:**\n- Total de Eleitores: ${resumo.totalEleitores.toLocaleString('pt-BR')}\n- Comparecimento: ${resumo.comparecimento.toLocaleString('pt-BR')} (${taxaParticipacao}%)\n- Abstenções: ${resumo.abstencoes.toLocaleString('pt-BR')}\n\n📍 **Abrangência:**\n- 52 municípios\n- 29 zonas eleitorais\n\n💡 *Pergunte sobre análise territorial, zonas prioritárias, ou mapa de força!*`
         }
       }
 
       // Resposta padrão
-      return `👋 **Olá! Sou o Assistente DTE**\n\nPosso ajudar você com informações sobre:\n\n📊 **Dados Gerais**\n- Resumo das eleições 2024\n- Taxa de participação e abstenção\n\n🏆 **Candidatos**\n- Top prefeitos mais votados\n- Deputados federais e estaduais (ex: "Rafael Fera")\n- Governador e senador\n\n🏛️ **Partidos**\n- Partidos mais votados\n\n📍 **Municípios**\n- Dados de Porto Velho\n- Informações por cidade\n\n💡 **Exemplos de perguntas:**\n- "Qual foi o resumo das eleições 2024?"\n- "Quais os deputados federais eleitos em 2022?"\n- "Me traga informações sobre Rafael Fera"\n- "Mostre dados de Porto Velho"\n\n*Digite sua pergunta e eu buscarei os dados para você!*`
+      return `👋 **Olá! Sou o Assistente DTE**\n\nPosso ajudar gestores de campanha com:\n\n🎯 **Análise Estratégica**\n- "Zonas prioritárias para campanha"\n- "Mapa de força de Porto Velho"\n- "Análise territorial de Cacoal"\n\n👥 **Inteligência Eleitoral**\n- "Análise por zona eleitoral"\n- "Comparativo 2020 vs 2024"\n- "Perfil do eleitorado"\n\n🏆 **Candidatos e Resultados**\n- "Top prefeitos 2024"\n- "Vereadores de Ji-Paraná"\n- "Deputados federais 2022"\n\n📊 **Dados Gerais**\n- "Resumo eleições 2024"\n- "Partidos mais votados"\n\n*Digite sua pergunta!*`
 
     } catch (error) {
       console.error('Erro ao processar consulta:', error)
@@ -537,7 +955,7 @@ export default function AssistenteDTE() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: '❌ Desculpe, ocorreu um erro ao processar sua consulta. Por favor, tente novamente.',
+        content: '❌ Desculpe, ocorreu um erro. Por favor, tente novamente.',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
@@ -579,7 +997,7 @@ export default function AssistenteDTE() {
           className={`fixed z-50 bg-[var(--bg-primary)] rounded-xl shadow-2xl border border-[var(--border-color)] flex flex-col transition-all duration-300 ${
             isExpanded 
               ? 'inset-4' 
-              : 'bottom-6 right-6 w-[400px] h-[600px] max-h-[80vh]'
+              : 'bottom-6 right-6 w-[420px] h-[650px] max-h-[85vh]'
           }`}
         >
           {/* Header */}
@@ -590,7 +1008,7 @@ export default function AssistenteDTE() {
               </div>
               <div>
                 <h3 className="font-semibold text-white">Assistente DTE</h3>
-                <p className="text-xs text-white/80">Inteligência Eleitoral</p>
+                <p className="text-xs text-white/80">Inteligência para Gestores de Campanha</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -604,14 +1022,12 @@ export default function AssistenteDTE() {
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="p-2 hover:bg-white/20 rounded-lg transition-colors text-white/80 hover:text-white"
-                title={isExpanded ? 'Minimizar' : 'Expandir'}
               >
                 {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 hover:bg-white/20 rounded-lg transition-colors text-white/80 hover:text-white"
-                title="Fechar"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -621,16 +1037,34 @@ export default function AssistenteDTE() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 && (
-              <div className="text-center py-8">
+              <div className="text-center py-6">
                 <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 p-6 rounded-xl mb-4">
                   <Bot className="w-12 h-12 mx-auto text-emerald-500 mb-3" />
-                  <h4 className="font-semibold mb-2">Bem-vindo ao Assistente DTE!</h4>
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    Faça perguntas sobre dados eleitorais de Rondônia (2020-2024)
+                  <h4 className="font-semibold mb-2">Assistente para Gestores de Campanha</h4>
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">
+                    Análises territoriais, zonas prioritárias e insights estratégicos
                   </p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 p-2 rounded">
+                      <Target className="w-4 h-4 text-emerald-500" />
+                      <span>Análise Territorial</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 p-2 rounded">
+                      <Zap className="w-4 h-4 text-yellow-500" />
+                      <span>Zonas Prioritárias</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 p-2 rounded">
+                      <MapPin className="w-4 h-4 text-blue-500" />
+                      <span>Mapa de Força</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 p-2 rounded">
+                      <TrendingUp className="w-4 h-4 text-orange-500" />
+                      <span>Comparativos</span>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {SUGGESTION_CHIPS.map((chip, i) => (
+                  {SUGGESTION_CHIPS.slice(0, 6).map((chip, i) => (
                     <button
                       key={i}
                       onClick={() => sendMessage(chip.query)}
@@ -654,7 +1088,7 @@ export default function AssistenteDTE() {
                   </div>
                 )}
                 <div
-                  className={`max-w-[80%] rounded-xl p-3 ${
+                  className={`max-w-[85%] rounded-xl p-3 ${
                     message.role === 'user'
                       ? 'bg-[var(--accent-color)] text-white'
                       : 'bg-[var(--bg-secondary)]'
@@ -693,7 +1127,10 @@ export default function AssistenteDTE() {
                   <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div className="bg-[var(--bg-secondary)] rounded-xl p-3">
-                  <Loader2 className="w-5 h-5 animate-spin text-[var(--accent-color)]" />
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-[var(--accent-color)]" />
+                    <span className="text-sm text-[var(--text-secondary)]">Analisando dados...</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -705,7 +1142,7 @@ export default function AssistenteDTE() {
           {messages.length > 0 && (
             <div className="px-4 py-2 border-t border-[var(--border-color)] overflow-x-auto">
               <div className="flex gap-2">
-                {SUGGESTION_CHIPS.slice(0, 3).map((chip, i) => (
+                {SUGGESTION_CHIPS.slice(0, 4).map((chip, i) => (
                   <button
                     key={i}
                     onClick={() => sendMessage(chip.query)}
@@ -740,7 +1177,7 @@ export default function AssistenteDTE() {
               </button>
             </div>
             <p className="text-xs text-center text-[var(--text-secondary)] mt-2">
-              Pressione Enter para enviar • Dados de RO 2020-2024
+              Dados de RO 2020-2024 • Análises para Gestores de Campanha
             </p>
           </div>
         </div>
