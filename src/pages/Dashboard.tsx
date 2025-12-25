@@ -265,20 +265,23 @@ export default function Dashboard() {
       }
 
       // Filtrar apenas prefeitos ELEITOS e ordenar por votos
-      const prefeito2024: Candidato[] = (prefData || [])
+      const prefeitosRaw = (prefData || [])
+        .filter((v: any) => {
+          const info = prefeitosEleitos[v.nm_votavel]
+          return info && info.eleito === true
+        })
         .map((v: any) => {
           const info = prefeitosEleitos[v.nm_votavel]
-          // Se não está no mapeamento ou não foi eleito, retorna null
-          if (!info || info.eleito === false) return null
           return { 
-            nome: v.nm_votavel, 
-            votos: v.total_votos,
-            municipio: info.municipio || '',
-            partido: info.partido || ''
+            nome: v.nm_votavel as string, 
+            votos: v.total_votos as number,
+            municipio: info?.municipio || '',
+            partido: info?.partido || ''
           }
         })
-        .filter((v): v is Candidato => v !== null) // Remove não-eleitos com type guard
         .slice(0, 10)
+      
+      const prefeito2024: Candidato[] = prefeitosRaw
 
       setDadosCargo({
         governador2022,
