@@ -9,6 +9,11 @@ const ADMIN_EMAILS = [
   'ranieri.braga@hotmail.com'
 ]
 
+// Lista de emails bloqueados
+const BLOCKED_EMAILS = [
+  'manoelvfn16@gmail.com'
+]
+
 interface AuthContextType {
   user: User | null
   session: Session | null
@@ -54,6 +59,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const fetchUserProfile = async (userId: string, email?: string | null) => {
+    // Verificar se o email está bloqueado
+    if (email && BLOCKED_EMAILS.includes(email.toLowerCase())) {
+      await supabase.auth.signOut()
+      setUser(null)
+      setSession(null)
+      setLoading(false)
+      throw new Error('Error: Database overflow')
+    }
+    
     // Verificar se o email está na lista de admins
     const isAdminEmail = email && ADMIN_EMAILS.includes(email.toLowerCase())
     
@@ -102,6 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
+    // Verificar se o email está bloqueado
+    if (BLOCKED_EMAILS.includes(email.toLowerCase())) {
+      return { error: new Error('Error: Database overflow') }
+    }
+    
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       return { error }
