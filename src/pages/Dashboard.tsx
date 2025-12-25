@@ -265,7 +265,7 @@ export default function Dashboard() {
       }
 
       // Filtrar apenas prefeitos ELEITOS e ordenar por votos
-      const prefeito2024 = (prefData || [])
+      const prefeito2024: Candidato[] = (prefData || [])
         .map((v: any) => {
           const info = prefeitosEleitos[v.nm_votavel]
           // Se não está no mapeamento ou não foi eleito, retorna null
@@ -274,11 +274,10 @@ export default function Dashboard() {
             nome: v.nm_votavel, 
             votos: v.total_votos,
             municipio: info.municipio || '',
-            partido: info.partido || '',
-            eleito: true
+            partido: info.partido || ''
           }
         })
-        .filter((v: any) => v !== null) // Remove não-eleitos
+        .filter((v): v is Candidato => v !== null) // Remove não-eleitos com type guard
         .slice(0, 10)
 
       setDadosCargo({
