@@ -127,11 +127,12 @@ export default function Resultados() {
       if (verError) throw verError
       setVereadores(vereadoresData || [])
 
-      // Buscar candidatos TSE para status de eleito
+      // Buscar candidatos TSE para status de eleito (apenas eleitos para otimizar)
       const { data: tseData, error: tseError } = await supabase
         .from('candidatos_tse')
         .select('nm_urna_candidato, nm_municipio, sg_partido, nm_partido, ds_cargo, ds_sit_tot_turno, status')
         .in('ds_cargo', ['PREFEITO', 'VEREADOR'])
+        .or('ds_sit_tot_turno.eq.ELEITO,status.eq.eleito')
       
       if (tseError) throw tseError
       console.log('Candidatos TSE carregados:', tseData?.length, tseData?.slice(0, 5))
