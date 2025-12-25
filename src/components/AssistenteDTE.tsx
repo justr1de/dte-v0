@@ -460,7 +460,30 @@ export default function AssistenteDTE() {
     return resultados
   }
 
-  // Top prefeitos 2024
+  // Top prefeitos 2024 - APENAS ELEITOS (considerando 2º turno)
+  // IMPORTANTE: Léo Moraes venceu Mariana Carvalho no 2º turno em Porto Velho
+  const PREFEITOS_ELEITOS_2024: Record<string, { municipio: string, partido: string }> = {
+    'LÉO': { municipio: 'PORTO VELHO', partido: 'PODE' }, // VENCEDOR 2º TURNO
+    'ADAILTON FÚRIA': { municipio: 'CACOAL', partido: 'PSD' },
+    'AFFONSO CÂNDIDO': { municipio: 'JI-PARANÁ', partido: 'PL' },
+    'DELEGADO FLORI': { municipio: 'VILHENA', partido: 'PODE' },
+    'CÉLIO LOPES': { municipio: 'ARIQUEMES', partido: 'UNIÃO' },
+    'JUÍZA EUMA TOURINHO': { municipio: 'ROLIM DE MOURA', partido: 'MDB' },
+    'ISAU FONSECA': { municipio: 'GUAJARÁ-MIRIM', partido: 'MDB' },
+    'GIO DAMO': { municipio: 'ALTA FLORESTA D\'OESTE', partido: 'UNIÃO' },
+    'LEANDRO VIEIRA': { municipio: 'CORUMBIARA', partido: 'UNIÃO' },
+    'RONALDO DELAZARI': { municipio: 'NOVO HORIZONTE DO OESTE', partido: 'UNIÃO' },
+    'PROFESSOR WELITON': { municipio: 'ESPIGÃO DO OESTE', partido: 'PL' },
+    'JEVERSON LIMA': { municipio: 'JARU', partido: 'PL' },
+    'ALDO JULIO': { municipio: 'OURO PRETO DO OESTE', partido: 'MDB' },
+    'PATRICK FAELBI': { municipio: 'PIMENTA BUENO', partido: 'PODE' },
+    'PROF ª MARCILENE': { municipio: 'COSTA MARQUES', partido: 'MDB' },
+    'DR BENEDITO ALVES': { municipio: 'SÃO MIGUEL DO GUAPORÉ', partido: 'MDB' },
+    'ALEX TESTONI': { municipio: 'MACHADINHO D\'OESTE', partido: 'PP' },
+    'PAULO DA REMAP': { municipio: 'BURITIS', partido: 'PP' },
+    'DR. RAFAEL GODOI': { municipio: 'PRESIDENTE MÉDICI', partido: 'MDB' }
+  }
+
   const buscarTopPrefeitos = async (limite: number = 10) => {
     const { data } = await supabase
       .from('boletins_urna')
@@ -470,16 +493,25 @@ export default function AssistenteDTE() {
       .eq('ano_eleicao', 2024)
       .eq('nr_turno', 1)
       .order('qt_votos', { ascending: false })
-      .limit(500)
+      .limit(1000)
 
     if (!data) return null
 
     const prefTotals: any = {}
     data.forEach(p => {
       if (p.nm_votavel && p.nm_votavel !== 'Branco' && p.nm_votavel !== 'Nulo') {
+        // Verificar se é um prefeito ELEITO
+        const isEleito = PREFEITOS_ELEITOS_2024[p.nm_votavel]
+        if (!isEleito) return // Pular não-eleitos (ex: Mariana Carvalho perdeu 2º turno)
+        
         const key = `${p.nm_votavel}-${p.nm_municipio}`
         if (!prefTotals[key]) {
-          prefTotals[key] = { nome: p.nm_votavel, partido: p.sg_partido, municipio: p.nm_municipio, votos: 0 }
+          prefTotals[key] = { 
+            nome: p.nm_votavel, 
+            partido: isEleito.partido || p.sg_partido, 
+            municipio: isEleito.municipio || p.nm_municipio, 
+            votos: 0 
+          }
         }
         prefTotals[key].votos += p.qt_votos || 0
       }

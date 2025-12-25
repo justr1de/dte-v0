@@ -245,30 +245,40 @@ export default function Dashboard() {
         .select('nm_votavel, total_votos')
         .limit(50)
 
-      // Mapeamento manual de prefeitos para municípios (dados conhecidos)
-      const municipiosPorPrefeito: Record<string, { municipio: string, partido: string }> = {
-        'MARIANA CARVALHO': { municipio: 'Porto Velho', partido: 'União Brasil' },
-        'LÉO': { municipio: 'Porto Velho', partido: 'Podemos' },
-        'ADAILTON FÚRIA': { municipio: 'Cacoal', partido: 'PSD' },
-        'AFFONSO CÂNDIDO': { municipio: 'Ji-Paraná', partido: 'PL' },
-        'DELEGADO FLORI': { municipio: 'Vilhena', partido: 'Podemos' },
-        'CÉLIO LOPES': { municipio: 'Ariquemes', partido: 'União Brasil' },
-        'CARLA REDANO': { municipio: 'Ariquemes', partido: 'MDB' },
-        'JUÍZA EUMA TOURINHO': { municipio: 'Rolim de Moura', partido: 'MDB' },
-        'MARLEI MEZZOMO': { municipio: 'Rolim de Moura', partido: 'PP' },
-        'ISAU FONSECA': { municipio: 'Guajará-Mirim', partido: 'MDB' }
+      // Mapeamento manual de prefeitos ELEITOS para municípios (resultado final incluindo 2º turno)
+      // IMPORTANTE: Léo Moraes venceu Mariana Carvalho no 2º turno em Porto Velho
+      const prefeitosEleitos: Record<string, { municipio: string, partido: string, eleito: boolean }> = {
+        'LÉO': { municipio: 'Porto Velho', partido: 'Podemos', eleito: true }, // VENCEDOR 2º TURNO
+        'MARIANA CARVALHO': { municipio: 'Porto Velho', partido: 'União Brasil', eleito: false }, // Perdeu 2º turno
+        'ADAILTON FÚRIA': { municipio: 'Cacoal', partido: 'PSD', eleito: true },
+        'AFFONSO CÂNDIDO': { municipio: 'Ji-Paraná', partido: 'PL', eleito: true },
+        'DELEGADO FLORI': { municipio: 'Vilhena', partido: 'Podemos', eleito: true },
+        'CÉLIO LOPES': { municipio: 'Ariquemes', partido: 'União Brasil', eleito: true },
+        'CARLA REDANO': { municipio: 'Ariquemes', partido: 'MDB', eleito: false },
+        'JUÍZA EUMA TOURINHO': { municipio: 'Rolim de Moura', partido: 'MDB', eleito: true },
+        'MARLEI MEZZOMO': { municipio: 'Rolim de Moura', partido: 'PP', eleito: false },
+        'ISAU FONSECA': { municipio: 'Guajará-Mirim', partido: 'MDB', eleito: true },
+        'GIO DAMO': { municipio: 'Alta Floresta D\'Oeste', partido: 'União', eleito: true },
+        'LEANDRO VIEIRA': { municipio: 'Corumbiara', partido: 'União', eleito: true },
+        'RONALDO DELAZARI': { municipio: 'Novo Horizonte do Oeste', partido: 'União', eleito: true },
+        'PROFESSOR WELITON': { municipio: 'Espigão do Oeste', partido: 'PL', eleito: true }
       }
 
+      // Filtrar apenas prefeitos ELEITOS e ordenar por votos
       const prefeito2024 = (prefData || [])
         .map((v: any) => {
-          const info = municipiosPorPrefeito[v.nm_votavel] || {}
+          const info = prefeitosEleitos[v.nm_votavel]
+          // Se não está no mapeamento ou não foi eleito, retorna null
+          if (!info || info.eleito === false) return null
           return { 
             nome: v.nm_votavel, 
             votos: v.total_votos,
             municipio: info.municipio || '',
-            partido: info.partido || ''
+            partido: info.partido || '',
+            eleito: true
           }
         })
+        .filter((v: any) => v !== null) // Remove não-eleitos
         .slice(0, 10)
 
       setDadosCargo({
