@@ -282,8 +282,11 @@ export default function Dashboard() {
         'CRISPIN': { municipio: 'Governador Jorge Teixeira', partido: 'MDB', eleito: true }
       }
 
+      // Debug: verificar dados recebidos
+      console.log('Dados de prefeitos recebidos:', prefData?.length, prefData?.slice(0, 5))
+
       // Filtrar apenas prefeitos ELEITOS e ordenar por votos
-      const prefeitosRaw = (prefData || [])
+      let prefeitosRaw = (prefData || [])
         .filter((v: any) => {
           const info = prefeitosEleitos[v.nm_votavel]
           return info && info.eleito === true
@@ -298,6 +301,22 @@ export default function Dashboard() {
           }
         })
         .slice(0, 10)
+      
+      // Fallback: se não encontrar prefeitos eleitos, mostrar os mais votados
+      if (prefeitosRaw.length === 0 && prefData && prefData.length > 0) {
+        console.log('Fallback: mostrando prefeitos mais votados')
+        prefeitosRaw = prefData
+          .filter((v: any) => v.nm_votavel && v.nm_votavel !== 'Branco' && v.nm_votavel !== 'Nulo')
+          .slice(0, 10)
+          .map((v: any) => ({
+            nome: v.nm_votavel as string,
+            votos: v.total_votos as number,
+            municipio: '',
+            partido: ''
+          }))
+      }
+      
+      console.log('Prefeitos processados:', prefeitosRaw.length, prefeitosRaw)
       
       const prefeito2024: Candidato[] = prefeitosRaw
 
