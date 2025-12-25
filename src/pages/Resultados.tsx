@@ -156,13 +156,32 @@ export default function Resultados() {
     )
   }, [searchMunicipio])
 
+  // Normalizar string para comparação (remover acentos e converter para maiúsculas)
+  const normalizeString = (str: string): string => {
+    if (!str) return ''
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .trim()
+  }
+
   // Verificar se candidato foi eleito
   const isEleito = (nome: string, municipio: string, cargo: string): boolean => {
-    const candidato = candidatosTSE.find(c => 
-      c.nm_urna_candidato?.toUpperCase() === nome?.toUpperCase() &&
-      c.nm_municipio?.toUpperCase() === municipio?.toUpperCase() &&
-      c.ds_cargo === cargo
-    )
+    if (!nome || !municipio || !cargo) return false
+    
+    const nomeNorm = normalizeString(nome)
+    const municipioNorm = normalizeString(municipio)
+    
+    const candidato = candidatosTSE.find(c => {
+      const candidatoNomeNorm = normalizeString(c.nm_urna_candidato || '')
+      const candidatoMunicipioNorm = normalizeString(c.nm_municipio || '')
+      
+      return candidatoNomeNorm === nomeNorm &&
+             candidatoMunicipioNorm === municipioNorm &&
+             c.ds_cargo === cargo
+    })
+    
     return candidato?.ds_sit_tot_turno === 'ELEITO' || candidato?.status === 'eleito'
   }
 
