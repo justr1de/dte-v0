@@ -134,6 +134,7 @@ export default function Resultados() {
         .in('ds_cargo', ['PREFEITO', 'VEREADOR'])
       
       if (tseError) throw tseError
+      console.log('Candidatos TSE carregados:', tseData?.length, tseData?.slice(0, 5))
       setCandidatosTSE(tseData || [])
 
     } catch (err: any) {
@@ -181,6 +182,11 @@ export default function Resultados() {
              candidatoMunicipioNorm === municipioNorm &&
              c.ds_cargo === cargo
     })
+    
+    // Debug para verificar a comparação
+    if (nome === 'L\u00c9O' || nome === 'LEO') {
+      console.log('Debug isEleito:', { nome, nomeNorm, municipio, municipioNorm, cargo, candidato, candidatosTSELength: candidatosTSE.length })
+    }
     
     return candidato?.ds_sit_tot_turno === 'ELEITO' || candidato?.status === 'eleito'
   }
