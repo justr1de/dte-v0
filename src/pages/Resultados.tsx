@@ -128,11 +128,12 @@ export default function Resultados() {
       setVereadores(vereadoresData || [])
 
       // Buscar candidatos TSE para status de eleito (apenas eleitos para otimizar)
+      // Prefeitos: ELEITO | Vereadores: ELEITO POR MÉDIA, ELEITO POR QP
       const { data: tseData, error: tseError } = await supabase
         .from('candidatos_tse')
         .select('nm_urna_candidato, nm_municipio, sg_partido, nm_partido, ds_cargo, ds_sit_tot_turno, status')
         .in('ds_cargo', ['PREFEITO', 'VEREADOR'])
-        .or('ds_sit_tot_turno.eq.ELEITO,status.eq.eleito')
+        .or('ds_sit_tot_turno.eq.ELEITO,ds_sit_tot_turno.eq.ELEITO POR M\u00c9DIA,ds_sit_tot_turno.eq.ELEITO POR QP,status.eq.eleito')
       
       if (tseError) throw tseError
       console.log('Candidatos TSE carregados:', tseData?.length, tseData?.slice(0, 5))
@@ -189,7 +190,11 @@ export default function Resultados() {
       console.log('Debug isEleito:', { nome, nomeNorm, municipio, municipioNorm, cargo, candidato, candidatosTSELength: candidatosTSE.length })
     }
     
-    return candidato?.ds_sit_tot_turno === 'ELEITO' || candidato?.status === 'eleito'
+    const statusEleito = candidato?.ds_sit_tot_turno
+    return statusEleito === 'ELEITO' || 
+           statusEleito === 'ELEITO POR M\u00c9DIA' || 
+           statusEleito === 'ELEITO POR QP' || 
+           candidato?.status === 'eleito'
   }
 
   // Dados filtrados
