@@ -261,7 +261,25 @@ export default function Dashboard() {
         'GIO DAMO': { municipio: 'Alta Floresta D\'Oeste', partido: 'União', eleito: true },
         'LEANDRO VIEIRA': { municipio: 'Corumbiara', partido: 'União', eleito: true },
         'RONALDO DELAZARI': { municipio: 'Novo Horizonte do Oeste', partido: 'União', eleito: true },
-        'PROFESSOR WELITON': { municipio: 'Espigão do Oeste', partido: 'PL', eleito: true }
+        'PROFESSOR WELITON': { municipio: 'Espigão do Oeste', partido: 'PL', eleito: true },
+        'JEVERSON LIMA': { municipio: 'Jaru', partido: 'PL', eleito: true },
+        'ALDO JULIO': { municipio: 'Ouro Preto do Oeste', partido: 'MDB', eleito: true },
+        'PATRICK FAELBI': { municipio: 'Pimenta Bueno', partido: 'Podemos', eleito: true },
+        'PROF ª MARCILENE': { municipio: 'Costa Marques', partido: 'MDB', eleito: true },
+        'DR BENEDITO ALVES': { municipio: 'São Miguel do Guaporé', partido: 'MDB', eleito: true },
+        'ALEX TESTONI': { municipio: 'Machadinho D\'Oeste', partido: 'PP', eleito: true },
+        'PAULO DA REMAP': { municipio: 'Buritis', partido: 'PP', eleito: true },
+        'DR. RAFAEL GODOI': { municipio: 'Presidente Médici', partido: 'MDB', eleito: true },
+        'DELEGADO JULIO CESAR': { municipio: 'Candeias do Jamari', partido: 'MDB', eleito: true },
+        'NETINHO': { municipio: 'Theobroma', partido: 'MDB', eleito: true },
+        'MARCÉLIO BRASILEIRO': { municipio: 'Cujubim', partido: 'MDB', eleito: true },
+        'LINDOMAR GARÇON': { municipio: 'São Francisco do Guaporé', partido: 'MDB', eleito: true },
+        'VALTAIR FRITZ': { municipio: 'Primavera de Rondônia', partido: 'MDB', eleito: true },
+        'GILLIARD GOMES': { municipio: 'Teixeirópolis', partido: 'MDB', eleito: true },
+        'RAQUEL DONADON': { municipio: 'Colorado do Oeste', partido: 'MDB', eleito: true },
+        'JURANDIR DE OLIVEIRA': { municipio: 'Castanheiras', partido: 'MDB', eleito: true },
+        'VALTEIR CRUZ': { municipio: 'Mirante da Serra', partido: 'MDB', eleito: true },
+        'CRISPIN': { municipio: 'Governador Jorge Teixeira', partido: 'MDB', eleito: true }
       }
 
       // Filtrar apenas prefeitos ELEITOS e ordenar por votos
