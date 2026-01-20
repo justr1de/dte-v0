@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+'use client'
+
 import { supabase } from '@/lib/supabase'
+import { useEffect, useState } from 'react'
 import {
   Calculator,
   Target,
@@ -26,7 +28,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
   PieChart,
@@ -50,13 +52,14 @@ interface MetaCalculada {
 export default function CalculadoraMetas() {
   const [loading, setLoading] = useState(true)
   const [dadosEleitorais, setDadosEleitorais] = useState<any[]>([])
+  const [mostrarGraficoDistribuicao, setMostrarGraficoDistribuicao] = useState(true)
   
   // Parâmetros de entrada
   const [cargo, setCargo] = useState('prefeito')
   const [taxaComparecimento, setTaxaComparecimento] = useState(80)
   const [margemSeguranca, setMargemSeguranca] = useState(5)
   const [concorrentes, setConcorrentes] = useState(5)
-  const [metaPercentual, setMetaPercentual] = useState(0) // 0 = calcular automaticamente
+  const [metaPercentual, setMetaPercentual] = useState(0)
   
   // Resultado
   const [resultado, setResultado] = useState<MetaCalculada | null>(null)
@@ -68,13 +71,11 @@ export default function CalculadoraMetas() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Buscar dados de comparecimento/abstenção
       const { data: comparecimentoData } = await supabase
         .from('comparecimento_abstencao')
         .select('*')
         .eq('ano', 2022)
 
-      // Buscar perfil do eleitorado
       const { data: perfilData } = await supabase
         .from('perfil_eleitorado')
         .select('*')
@@ -85,7 +86,6 @@ export default function CalculadoraMetas() {
         ...(perfilData || [])
       ])
 
-      // Calcular automaticamente ao carregar
       if (comparecimentoData && comparecimentoData.length > 0) {
         calcularMeta(comparecimentoData)
       }
@@ -99,7 +99,6 @@ export default function CalculadoraMetas() {
   const calcularMeta = (dados?: any[]) => {
     const dadosBase = dados || dadosEleitorais
 
-    // Calcular total de eleitores por zona
     const zonaMap = new Map<string, { eleitores: number; comparecimento: number }>()
     
     dadosBase.forEach(item => {
@@ -112,7 +111,6 @@ export default function CalculadoraMetas() {
       zonaData.comparecimento += item.comparecimento || 0
     })
 
-    // Calcular totais
     let totalEleitores = 0
     let totalComparecimento = 0
     zonaMap.forEach(z => {
@@ -120,25 +118,19 @@ export default function CalculadoraMetas() {
       totalComparecimento += z.comparecimento
     })
 
-    // Se não tiver dados, usar valores de exemplo
     if (totalEleitores === 0) {
       totalEleitores = 150000
       totalComparecimento = 120000
     }
 
-    // Calcular comparecimento estimado
     const comparecimentoEstimado = Math.round(totalEleitores * (taxaComparecimento / 100))
 
-    // Calcular votos necessários baseado no cargo
     let percentualBase: number
     switch (cargo) {
       case 'prefeito':
-        // Precisa de maioria absoluta (50% + 1) ou maioria simples em cidades pequenas
         percentualBase = metaPercentual > 0 ? metaPercentual : 50.1
         break
       case 'vereador':
-        // Quociente eleitoral: votos válidos / número de vagas
-        // Estimativa: 5-8% dependendo do número de candidatos
         percentualBase = metaPercentual > 0 ? metaPercentual : Math.max(5, 100 / (concorrentes * 3))
         break
       case 'governador':
@@ -154,13 +146,9 @@ export default function CalculadoraMetas() {
         percentualBase = metaPercentual > 0 ? metaPercentual : 50.1
     }
 
-    // Calcular votos necessários
     const votosNecessarios = Math.ceil(comparecimentoEstimado * (percentualBase / 100))
-    
-    // Aplicar margem de segurança
     const metaFinal = Math.ceil(votosNecessarios * (1 + margemSeguranca / 100))
 
-    // Distribuir meta por zona (proporcional ao número de eleitores)
     const distribuicaoPorZona = Array.from(zonaMap.entries()).map(([zona, data]) => {
       const proporcao = totalEleitores > 0 ? data.eleitores / totalEleitores : 0
       return {
@@ -193,9 +181,22 @@ export default function CalculadoraMetas() {
     { name: 'Outros', value: (resultado?.comparecimentoEstimado || 0) - (resultado?.metaFinal || 0), color: '#E5E7EB' }
   ]
 
+  const distribuicaoConcorrentes = () => {
+    if (!resultado) return []
+    const votosDisponiveis = resultado.comparecimentoEstimado
+    const votosCandidata = resultado.metaFinal
+    const votosPorConcorrente = Math.floor((votosDisponiveis - votosCandidata) / (concorrentes - 1))
+    const data = [{ nome: 'Você', votos: votosCandidata, percentual: ((votosCandidata / votosDisponiveis) * 100).toFixed(1) }]
+    for (let i = 1; i < concorrentes; i++) {
+      data.push({ nome: `Concorrente ${i}`, votos: votosPorConcorrente, percentual: ((votosPorConcorrente / votosDisponiveis) * 100).toFixed(1) })
+    }
+    return data
+  }
+  const distribuicaoData = distribuicaoConcorrentes()
+
   const progressData = resultado?.distribuicaoPorZona.slice(0, 8).map((z, i) => ({
     zona: `Zona ${z.zona}`,
-    progresso: 0, // Seria atualizado com dados reais de campanha
+    progresso: 0,
     meta: z.meta
   })) || []
 
@@ -214,7 +215,6 @@ export default function CalculadoraMetas() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -248,6 +248,48 @@ export default function CalculadoraMetas() {
         </div>
       ) : (
         <>
+          {/* Gráfico de Distribuição entre Concorrentes */}
+          {mostrarGraficoDistribuicao && resultado && (
+            <div className="card p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Distribuição de Votos entre Concorrentes
+                </h3>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Distribuição estimada de votos entre você e os concorrentes</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={distribuicaoData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="nome" />
+                  <YAxis />
+                  <RechartsTooltip formatter={(value) => value.toLocaleString('pt-BR')} />
+                  <Bar dataKey="votos" fill="#10B981" name="Votos" />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-4 space-y-2">
+                {distribuicaoData.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-sm">
+                    <span className={idx === 0 ? 'font-semibold text-green-600' : ''}>{item.nome}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 bg-gray-200 rounded-full h-2">
+                        <div className={`h-2 rounded-full ${idx === 0 ? 'bg-green-500' : 'bg-gray-400'}`} style={{ width: `${item.percentual}%` }} />
+                      </div>
+                      <span className="text-right w-16 font-medium">{item.percentual}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Card Explicativo */}
           <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-6 mb-6">
             <div className="flex gap-4">
@@ -385,7 +427,7 @@ export default function CalculadoraMetas() {
                   </p>
                 </div>
 
-                {/* Número de Concorrentes (para vereador) */}
+                {/* Número de Concorrentes */}
                 {cargo === 'vereador' && (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -403,12 +445,16 @@ export default function CalculadoraMetas() {
                     </div>
                     <input
                       type="range"
-                      min="3"
-                      max="30"
+                      min="2"
+                      max="20"
                       value={concorrentes}
                       onChange={(e) => setConcorrentes(parseInt(e.target.value))}
                       className="w-full"
                     />
+                    <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
+                      <span>2</span>
+                      <span>20</span>
+                    </div>
                   </div>
                 )}
 
@@ -416,7 +462,7 @@ export default function CalculadoraMetas() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="block text-sm font-medium">
-                      Meta Percentual Manual: {metaPercentual > 0 ? `${metaPercentual}%` : 'Automático'}
+                      Meta Percentual Manual: {metaPercentual > 0 ? metaPercentual + '%' : 'Automático'}
                     </label>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -430,7 +476,7 @@ export default function CalculadoraMetas() {
                   <input
                     type="range"
                     min="0"
-                    max="60"
+                    max="100"
                     value={metaPercentual}
                     onChange={(e) => setMetaPercentual(parseInt(e.target.value))}
                     className="w-full"
@@ -440,6 +486,7 @@ export default function CalculadoraMetas() {
                   </p>
                 </div>
 
+                {/* Botão Calcular */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -451,24 +498,10 @@ export default function CalculadoraMetas() {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Calcula a meta de votos necessária para vencer</p>
+                    <p>Calcula a meta de votos com os parâmetros definidos</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
-            </div>
-
-            {/* Dicas */}
-            <div className="card p-4 bg-cyan-50 border-cyan-200">
-              <h4 className="font-medium text-cyan-800 mb-2 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" />
-                Dicas
-              </h4>
-              <ul className="text-sm text-cyan-700 space-y-1">
-                <li>• Prefeito: maioria absoluta (50%+1)</li>
-                <li>• Vereador: quociente eleitoral</li>
-                <li>• Deputado: cláusula de barreira</li>
-                <li>• Adicione margem de segurança</li>
-              </ul>
             </div>
           </div>
 
@@ -476,191 +509,81 @@ export default function CalculadoraMetas() {
           <div className="lg:col-span-2 space-y-4">
             {resultado && (
               <>
-                {/* Cards de Resultado */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="card p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="w-5 h-5 text-blue-500" />
-                      <span className="text-xs text-[var(--text-muted)]">Total Eleitores</span>
-                    </div>
-                    <p className="text-xl font-bold">{resultado.totalEleitores.toLocaleString('pt-BR')}</p>
-                  </div>
-
-                  <div className="card p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-5 h-5 text-amber-500" />
-                      <span className="text-xs text-[var(--text-muted)]">Comparecimento Est.</span>
-                    </div>
-                    <p className="text-xl font-bold">{resultado.comparecimentoEstimado.toLocaleString('pt-BR')}</p>
-                  </div>
-
-                  <div className="card p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Percent className="w-5 h-5 text-purple-500" />
-                      <span className="text-xs text-[var(--text-muted)]">% Necessário</span>
-                    </div>
-                    <p className="text-xl font-bold">{resultado.percentualNecessario.toFixed(1)}%</p>
-                  </div>
-
-                  <div className="card p-4 bg-emerald-50 border-emerald-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Award className="w-5 h-5 text-emerald-600" />
-                      <span className="text-xs text-emerald-700">META FINAL</span>
-                    </div>
-                    <p className="text-2xl font-bold text-emerald-700">
-                      {resultado.metaFinal.toLocaleString('pt-BR')}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Gráficos */}
+                {/* Card de Resumo */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Gráfico de Pizza */}
-                  <div className="card p-6">
-                    <h3 className="text-lg font-semibold mb-4">Proporção da Meta</h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={90}
-                          paddingAngle={2}
-                          dataKey="value"
-                          label={({ name, value }) => `${(value / resultado.comparecimentoEstimado * 100).toFixed(1)}%`}
-                        >
-                          {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value: number) => value.toLocaleString('pt-BR')} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
+                  <div className="card p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-8 h-8 text-green-600" />
+                      <div>
+                        <p className="text-xs text-green-600 font-medium">Meta Final</p>
+                        <p className="text-2xl font-bold text-green-900">{resultado.metaFinal.toLocaleString('pt-BR')}</p>
+                        <p className="text-xs text-green-700 mt-1">{resultado.percentualNecessario.toFixed(1)}% dos votos</p>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Gráfico de Barras por Zona */}
-                  <div className="card p-6">
-                    <h3 className="text-lg font-semibold mb-4">Meta por Zona</h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <BarChart data={barData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="zona" tick={{ fontSize: 11 }} />
-                        <YAxis />
-                        <Tooltip formatter={(value: number) => value.toLocaleString('pt-BR')} />
-                        <Bar dataKey="meta" name="Meta" fill="#10B981" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                  <div className="card p-4 bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200">
+                    <div className="flex items-center gap-3">
+                      <Users className="w-8 h-8 text-blue-600" />
+                      <div>
+                        <p className="text-xs text-blue-600 font-medium">Comparecimento Estimado</p>
+                        <p className="text-2xl font-bold text-blue-900">{resultado.comparecimentoEstimado.toLocaleString('pt-BR')}</p>
+                        <p className="text-xs text-blue-700 mt-1">{taxaComparecimento}% de {resultado.totalEleitores.toLocaleString('pt-BR')}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Tabela de Distribuição */}
-                <div className="card">
-                  <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Distribuição de Metas por Zona</h3>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button className="btn-secondary flex items-center gap-2 text-sm">
-                          <Download className="w-4 h-4" />
-                          Exportar
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Exportar dados da meta em formato CSV</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-[var(--bg-secondary)]">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Zona</th>
-                          <th className="px-4 py-3 text-right text-sm font-semibold">Eleitores</th>
-                          <th className="px-4 py-3 text-right text-sm font-semibold">Meta de Votos</th>
-                          <th className="px-4 py-3 text-right text-sm font-semibold">% do Total</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Progresso</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[var(--border-color)]">
-                        {resultado.distribuicaoPorZona.map((zona, index) => (
-                          <tr key={zona.zona} className="hover:bg-[var(--bg-secondary)]">
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-cyan-500" />
-                                <span className="font-medium">Zona {zona.zona}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {zona.eleitores.toLocaleString('pt-BR')}
-                            </td>
-                            <td className="px-4 py-3 text-right font-medium text-emerald-600">
-                              {zona.meta.toLocaleString('pt-BR')}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {((zona.meta / resultado.metaFinal) * 100).toFixed(1)}%
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div 
-                                    className="h-full bg-cyan-500 rounded-full"
-                                    style={{ width: '0%' }}
-                                  />
-                                </div>
-                                <span className="text-xs text-[var(--text-muted)]">0%</span>
-                              </div>
-                            </td>
-                          </tr>
+                {/* Gráfico Pizza */}
+                <div className="card p-4">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    Proporção de Votos
+                  </h4>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
-                      </tbody>
-                      <tfoot className="bg-[var(--bg-secondary)] font-semibold">
-                        <tr>
-                          <td className="px-4 py-3">TOTAL</td>
-                          <td className="px-4 py-3 text-right">
-                            {resultado.totalEleitores.toLocaleString('pt-BR')}
-                          </td>
-                          <td className="px-4 py-3 text-right text-emerald-600">
-                            {resultado.metaFinal.toLocaleString('pt-BR')}
-                          </td>
-                          <td className="px-4 py-3 text-right">100%</td>
-                          <td className="px-4 py-3">-</td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
+                      </Pie>
+                      <RechartsTooltip formatter={(value) => value.toLocaleString('pt-BR')} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
 
-                {/* Insights */}
-                <div className="card p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-emerald-500" />
-                    Resumo da Estratégia
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                      <h4 className="font-medium text-emerald-800 mb-2">Meta Principal</h4>
-                      <p className="text-sm text-emerald-700">
-                        Para vencer como <strong>{getCargoLabel(cargo)}</strong>, você precisa conquistar 
-                        aproximadamente <strong>{resultado.metaFinal.toLocaleString('pt-BR')} votos</strong>, 
-                        o que representa <strong>{resultado.percentualNecessario.toFixed(1)}%</strong> dos 
-                        votos válidos (já com margem de segurança de {margemSeguranca}%).
-                      </p>
-                    </div>
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <h4 className="font-medium text-blue-800 mb-2">Média por Zona</h4>
-                      <p className="text-sm text-blue-700">
-                        Distribuindo proporcionalmente, cada zona deve contribuir em média com 
-                        <strong> {Math.round(resultado.metaFinal / resultado.distribuicaoPorZona.length).toLocaleString('pt-BR')} votos</strong>. 
-                        Foque nas zonas com maior número de eleitores para maximizar resultados.
-                      </p>
-                    </div>
-                  </div>
+                {/* Distribuição por Zona */}
+                <div className="card p-4">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Top 10 Zonas Eleitorais
+                  </h4>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={barData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="zona" />
+                      <YAxis />
+                      <RechartsTooltip formatter={(value) => value.toLocaleString('pt-BR')} />
+                      <Legend />
+                      <Bar dataKey="meta" fill="#10B981" name="Meta" />
+                      <Bar dataKey="eleitores" fill="#3B82F6" name="Eleitores" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </>
             )}
           </div>
-           </>
+          </div>
+        </>
       )}
     </div>
   )
