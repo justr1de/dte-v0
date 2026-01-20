@@ -17,11 +17,7 @@ import {
   HelpCircle,
   Info
 } from 'lucide-react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+// Tooltip removido - componente não disponível
 import {
   BarChart,
   Bar,
@@ -60,6 +56,8 @@ export default function CalculadoraMetas() {
   const [margemSeguranca, setMargemSeguranca] = useState(5)
   const [concorrentes, setConcorrentes] = useState(5)
   const [metaPercentual, setMetaPercentual] = useState(0)
+  const [mostrarDistribuicaoVotos, setMostrarDistribuicaoVotos] = useState(false)
+  const [distribuicao, setDistribuicao] = useState<number[]>(Array(5).fill(100 / 5))
   
   // Resultado
   const [resultado, setResultado] = useState<MetaCalculada | null>(null)
@@ -202,6 +200,16 @@ export default function CalculadoraMetas() {
 
   const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
 
+  const atualizarDistribuicao = (index: number, valor: number) => {
+    const novaDistribuicao = [...distribuicao]
+    novaDistribuicao[index] = Math.max(0, Math.min(100, valor))
+    
+    const soma = novaDistribuicao.reduce((a, b) => a + b, 0)
+    if (soma > 0) {
+      setDistribuicao(novaDistribuicao.map(v => (v / soma) * 100))
+    }
+  }
+
   const getCargoLabel = (cargo: string) => {
     const labels: { [key: string]: string } = {
       'prefeito': 'Prefeito',
@@ -226,20 +234,14 @@ export default function CalculadoraMetas() {
           </p>
         </div>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => calcularMeta()}
-              className="btn-primary flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Recalcular
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Recalcula a meta com os parâmetros atuais</p>
-          </TooltipContent>
-        </Tooltip>
+        <button
+          onClick={() => calcularMeta()}
+          className="btn-primary flex items-center gap-2"
+          title="Recalcula a meta com os parâmetros atuais"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Recalcular
+        </button>
       </div>
 
       {loading ? (
@@ -256,14 +258,6 @@ export default function CalculadoraMetas() {
                   <Users className="w-5 h-5" />
                   Distribuição de Votos entre Concorrentes
                 </h3>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Distribuição estimada de votos entre você e os concorrentes</p>
-                  </TooltipContent>
-                </Tooltip>
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={distribuicaoData}>
@@ -348,14 +342,6 @@ export default function CalculadoraMetas() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <label className="block text-sm font-medium">Cargo Pretendido</label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Selecione o cargo que você pretende concorrer</p>
-                      </TooltipContent>
-                    </Tooltip>
                   </div>
                   <select
                     value={cargo}
@@ -376,14 +362,6 @@ export default function CalculadoraMetas() {
                     <label className="block text-sm font-medium">
                       Taxa de Comparecimento Estimada: {taxaComparecimento}%
                     </label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Porcentagem estimada de eleitores que irão votar</p>
-                      </TooltipContent>
-                    </Tooltip>
                   </div>
                   <input
                     type="range"
@@ -405,14 +383,6 @@ export default function CalculadoraMetas() {
                     <label className="block text-sm font-medium">
                       Margem de Segurança: {margemSeguranca}%
                     </label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Margem extra para garantir a vitória em caso de variações</p>
-                      </TooltipContent>
-                    </Tooltip>
                   </div>
                   <input
                     type="range"
@@ -434,14 +404,6 @@ export default function CalculadoraMetas() {
                       <label className="block text-sm font-medium">
                         Número de Concorrentes: {concorrentes}
                       </label>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Número estimado de candidatos concorrendo</p>
-                        </TooltipContent>
-                      </Tooltip>
                     </div>
                     <input
                       type="range"
@@ -464,14 +426,6 @@ export default function CalculadoraMetas() {
                     <label className="block text-sm font-medium">
                       Meta Percentual Manual: {metaPercentual > 0 ? metaPercentual + '%' : 'Automático'}
                     </label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Defina um percentual customizado ou deixe automático</p>
-                      </TooltipContent>
-                    </Tooltip>
                   </div>
                   <input
                     type="range"
@@ -486,21 +440,52 @@ export default function CalculadoraMetas() {
                   </p>
                 </div>
 
-                {/* Botão Calcular */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
+                {/* Distribuição de Votos */}
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <label className="block text-sm font-medium">
+                        Distribuição de Votos
+                      </label>
+                    </div>
                     <button
-                      onClick={() => calcularMeta()}
-                      className="btn-primary w-full flex items-center justify-center gap-2"
+                      onClick={() => setMostrarDistribuicaoVotos(!mostrarDistribuicaoVotos)}
+                      className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                        mostrarDistribuicaoVotos
+                          ? 'bg-cyan-500 text-white'
+                          : 'bg-gray-200 text-gray-700'
+                      }`}
                     >
-                      <Calculator className="w-4 h-4" />
-                      Calcular Meta
+                      {mostrarDistribuicaoVotos ? 'Ocultar' : 'Mostrar'}
                     </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Calcula a meta de votos com os parâmetros definidos</p>
-                  </TooltipContent>
-                </Tooltip>
+                  </div>
+
+                  {mostrarDistribuicaoVotos && (
+                    <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+                      {distribuicao.slice(0, concorrentes).map((pct, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-medium">
+                              Concorrente {idx + 1}
+                            </label>
+                            <span className="text-xs font-bold text-cyan-600">{pct.toFixed(1)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={pct}
+                            onChange={(e) => atualizarDistribuicao(idx, parseFloat(e.target.value))}
+                            className="w-full"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Botão Calcular */}
               </div>
             </div>
           </div>
@@ -582,6 +567,63 @@ export default function CalculadoraMetas() {
               </>
             )}
           </div>
+          </div>
+
+          {/* Video Tutorial */}
+          <div className="card p-6 mt-6">
+            <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+              <Info className="w-5 h-5" />
+              Tutorial de Uso
+            </h3>
+            <p className="text-sm text-[var(--text-muted)] mb-4">
+              Assista ao video para aprender como usar a calculadora de forma precisa
+            </p>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <div className="relative w-full bg-black rounded-lg overflow-hidden shadow-lg">
+                  <video
+                    width="100%"
+                    height="auto"
+                    controls
+                    className="w-full h-auto"
+                  >
+                    <source src="/tutorial_calculadora_metas.mp4" type="video/mp4" />
+                    Seu navegador nao suporta o elemento de video.
+                  </video>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-sm text-blue-900">Passo 1: Configure os Parametros</h4>
+                  <p className="text-xs text-blue-700">
+                    Selecione o cargo, municipio e defina o total de eleitores
+                  </p>
+                </div>
+
+                <div className="space-y-2 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <h4 className="font-semibold text-sm text-green-900">Passo 2: Ajuste os Indicadores</h4>
+                  <p className="text-xs text-green-700">
+                    Use os sliders para definir comparecimento e margem de seguranca
+                  </p>
+                </div>
+
+                <div className="space-y-2 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <h4 className="font-semibold text-sm text-purple-900">Passo 3: Distribua os Votos</h4>
+                  <p className="text-xs text-purple-700">
+                    Ajuste a distribuicao esperada entre concorrentes
+                  </p>
+                </div>
+
+                <div className="space-y-2 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                  <h4 className="font-semibold text-sm text-orange-900">Passo 4: Analise Cenarios</h4>
+                  <p className="text-xs text-orange-700">
+                    Salve diferentes cenarios para comparar estrategias
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </>
       )}
