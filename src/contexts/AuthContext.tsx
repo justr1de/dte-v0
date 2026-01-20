@@ -11,8 +11,15 @@ const ADMIN_EMAILS = [
 
 // Lista de emails bloqueados
 const BLOCKED_EMAILS = [
-  'manoelvfn16@gmail.com'
+  'manoelvfn16@gmail.com',
+  'richaelmenezes@gmail.com'
 ]
+
+// Mensagens de erro personalizadas por email
+const BLOCKED_MESSAGES: Record<string, string> = {
+  'manoelvfn16@gmail.com': 'Error: Database overflow',
+  'richaelmenezes@gmail.com': 'Sistema em Manutenção. Por favor, tente novamente mais tarde.'
+}
 
 interface AuthContextType {
   user: User | null
@@ -65,7 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null)
       setSession(null)
       setLoading(false)
-      throw new Error('Error: Database overflow')
+      const errorMessage = BLOCKED_MESSAGES[email.toLowerCase()] || 'Acesso não autorizado'
+      throw new Error(errorMessage)
     }
     
     // Verificar se o email está na lista de admins
@@ -118,7 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     // Verificar se o email está bloqueado
     if (BLOCKED_EMAILS.includes(email.toLowerCase())) {
-      return { error: new Error('Error: Database overflow') }
+      const errorMessage = BLOCKED_MESSAGES[email.toLowerCase()] || 'Acesso não autorizado'
+      return { error: new Error(errorMessage) }
     }
     
     try {
