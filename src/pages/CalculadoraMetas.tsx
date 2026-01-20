@@ -15,7 +15,12 @@ import {
   Percent,
   Award,
   HelpCircle,
-  Info
+  Info,
+  Save,
+  Trash2,
+  BarChart3,
+  Clock,
+  Layers
 } from 'lucide-react'
 // Tooltip removido - componente não disponível
 import {
@@ -45,6 +50,19 @@ interface MetaCalculada {
   distribuicaoPorZona: { zona: string; meta: number; eleitores: number }[]
 }
 
+interface CenarioSalvo {
+  id: string
+  nome: string
+  data: string
+  cargo: string
+  taxaComparecimento: number
+  margemSeguranca: number
+  metaFinal: number
+  percentualNecessario: number
+  comparecimentoEstimado: number
+  totalEleitores: number
+}
+
 export default function CalculadoraMetas() {
   const [loading, setLoading] = useState(true)
   const [dadosEleitorais, setDadosEleitorais] = useState<any[]>([])
@@ -61,6 +79,10 @@ export default function CalculadoraMetas() {
   
   // Resultado
   const [resultado, setResultado] = useState<MetaCalculada | null>(null)
+  
+  // Cenários salvos
+  const [cenariosSalvos, setCenariosSalvos] = useState<CenarioSalvo[]>([])
+  const [nomeCenario, setNomeCenario] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -210,7 +232,7 @@ export default function CalculadoraMetas() {
     }
   }
 
-  const getCargoLabel = (cargo: string) => {
+  const getCargoLabel = (cargoParam: string) => {
     const labels: { [key: string]: string } = {
       'prefeito': 'Prefeito',
       'vereador': 'Vereador',
@@ -218,8 +240,43 @@ export default function CalculadoraMetas() {
       'deputado_estadual': 'Deputado Estadual',
       'deputado_federal': 'Deputado Federal'
     }
-    return labels[cargo] || cargo
+    return labels[cargoParam] || cargoParam
   }
+
+  const salvarCenario = () => {
+    if (!resultado) return
+    
+    const novoCenario: CenarioSalvo = {
+      id: Date.now().toString(),
+      nome: nomeCenario || `Cenario ${cenariosSalvos.length + 1}`,
+      data: new Date().toLocaleString('pt-BR'),
+      cargo: getCargoLabel(cargo),
+      taxaComparecimento,
+      margemSeguranca,
+      metaFinal: resultado.metaFinal,
+      percentualNecessario: resultado.percentualNecessario,
+      comparecimentoEstimado: resultado.comparecimentoEstimado,
+      totalEleitores: resultado.totalEleitores
+    }
+    
+    setCenariosSalvos([...cenariosSalvos, novoCenario])
+    setNomeCenario('')
+  }
+
+  const excluirCenario = (id: string) => {
+    setCenariosSalvos(cenariosSalvos.filter(c => c.id !== id))
+  }
+
+  const resetarCenarios = () => {
+    setCenariosSalvos([])
+  }
+
+  const dadosComparacao = cenariosSalvos.map(c => ({
+    nome: c.nome,
+    metaFinal: c.metaFinal,
+    comparecimento: c.comparecimentoEstimado,
+    percentual: c.percentualNecessario
+  }))
 
   return (
     <div className="space-y-6">
@@ -624,6 +681,159 @@ export default function CalculadoraMetas() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Dashboard de Cenários */}
+          <div className="card p-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Layers className="w-5 h-5 text-cyan-500" />
+                Dashboard de Cenários
+              </h3>
+              
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Nome do cenário..."
+                    value={nomeCenario}
+                    onChange={(e) => setNomeCenario(e.target.value)}
+                    className="input text-sm px-3 py-2 w-40"
+                  />
+                  <button
+                    onClick={salvarCenario}
+                    disabled={!resultado}
+                    className="btn btn-primary text-sm flex items-center gap-1 px-3 py-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    Salvar
+                  </button>
+                </div>
+                
+                {cenariosSalvos.length > 0 && (
+                  <button
+                    onClick={resetarCenarios}
+                    className="btn btn-outline text-sm flex items-center gap-1 px-3 py-2 text-red-600 border-red-300 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Resetar Todos
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {cenariosSalvos.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Nenhum cenário salvo ainda.</p>
+                <p className="text-xs mt-1">Calcule uma meta e clique em "Salvar" para criar seu primeiro cenário.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Tabela de Cenários */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-2 font-semibold">Cenário</th>
+                        <th className="text-left py-3 px-2 font-semibold">Cargo</th>
+                        <th className="text-right py-3 px-2 font-semibold">Meta Final</th>
+                        <th className="text-right py-3 px-2 font-semibold">Comparecimento</th>
+                        <th className="text-right py-3 px-2 font-semibold">Percentual</th>
+                        <th className="text-center py-3 px-2 font-semibold">Data</th>
+                        <th className="text-center py-3 px-2 font-semibold">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cenariosSalvos.map((cenario, idx) => (
+                        <tr key={cenario.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">
+                                {idx + 1}
+                              </span>
+                              <span className="font-medium">{cenario.nome}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-2 text-gray-600">{cenario.cargo}</td>
+                          <td className="py-3 px-2 text-right font-bold text-green-600">
+                            {cenario.metaFinal.toLocaleString('pt-BR')}
+                          </td>
+                          <td className="py-3 px-2 text-right text-blue-600">
+                            {cenario.comparecimentoEstimado.toLocaleString('pt-BR')}
+                          </td>
+                          <td className="py-3 px-2 text-right">
+                            {cenario.percentualNecessario.toFixed(1)}%
+                          </td>
+                          <td className="py-3 px-2 text-center text-gray-500 text-xs">
+                            <div className="flex items-center justify-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {cenario.data}
+                            </div>
+                          </td>
+                          <td className="py-3 px-2 text-center">
+                            <button
+                              onClick={() => excluirCenario(cenario.id)}
+                              className="text-red-500 hover:text-red-700 p-1"
+                              title="Excluir cenário"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Gráfico Comparativo */}
+                {cenariosSalvos.length >= 2 && (
+                  <div className="mt-6">
+                    <h4 className="font-semibold mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-cyan-500" />
+                      Comparação de Cenários
+                    </h4>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={dadosComparacao}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="nome" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} />
+                        <RechartsTooltip 
+                          formatter={(value: number) => value.toLocaleString('pt-BR')}
+                        />
+                        <Legend />
+                        <Bar dataKey="metaFinal" name="Meta Final" fill="#10B981" />
+                        <Bar dataKey="comparecimento" name="Comparecimento" fill="#3B82F6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Resumo Estatístico */}
+                {cenariosSalvos.length >= 1 && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-xs text-green-600 font-medium">Média das Metas</p>
+                      <p className="text-xl font-bold text-green-900">
+                        {Math.round(cenariosSalvos.reduce((a, c) => a + c.metaFinal, 0) / cenariosSalvos.length).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-xs text-blue-600 font-medium">Maior Meta</p>
+                      <p className="text-xl font-bold text-blue-900">
+                        {Math.max(...cenariosSalvos.map(c => c.metaFinal)).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                      <p className="text-xs text-purple-600 font-medium">Menor Meta</p>
+                      <p className="text-xl font-bold text-purple-900">
+                        {Math.min(...cenariosSalvos.map(c => c.metaFinal)).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </>
       )}
