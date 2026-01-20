@@ -20,6 +20,7 @@ import MapasCalor from './pages/MapasCalor'
 import MapaInterativo from './pages/MapaInterativo'
 import MapaCalorGoogle from './pages/MapaCalorGoogle'
 import MapaCalorLeaflet from './pages/MapaCalorLeaflet'
+import MapaCalorCidades from './pages/MapaCalorCidades'
 import Relatorios from './pages/Relatorios'
 import Importar from './pages/Importar'
 import Usuarios from './pages/Usuarios'
@@ -123,6 +124,7 @@ export default function App() {
       <Route path="/mapa-interativo" element={<ProtectedRoute><MapaInterativo /></ProtectedRoute>} />
       <Route path="/mapa-calor-google" element={<ProtectedRoute><MapaCalorGoogle /></ProtectedRoute>} />
       <Route path="/mapa-calor-leaflet" element={<ProtectedRoute><MapaCalorLeaflet /></ProtectedRoute>} />
+      <Route path="/mapa-calor-cidades" element={<ProtectedRoute><MapaCalorCidades /></ProtectedRoute>} />
       <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
       <Route path="/importar" element={<ProtectedRoute><Importar /></ProtectedRoute>} />
 

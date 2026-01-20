@@ -131,6 +131,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/mapa-interativo', icon: MapPin, label: 'Mapa Interativo' },
     { path: '/mapa-calor-google', icon: Map, label: 'Mapa de Calor Google' },
     { path: '/mapa-calor-leaflet', icon: ThermometerSun, label: 'Mapa de Calor Dinâmico' },
+    { path: '/mapa-calor-cidades', icon: ThermometerSun, label: 'Mapa de Calor por Cidades' },
   ]
 
   const adminMenuItems = [
