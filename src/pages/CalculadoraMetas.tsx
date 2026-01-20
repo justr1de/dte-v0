@@ -11,8 +11,15 @@ import {
   Download,
   RefreshCw,
   Percent,
-  Award
+  Award,
+  HelpCircle,
+  Info
 } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   BarChart,
   Bar,
@@ -219,13 +226,20 @@ export default function CalculadoraMetas() {
           </p>
         </div>
 
-        <button
-          onClick={() => calcularMeta()}
-          className="btn-primary flex items-center gap-2"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Recalcular
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => calcularMeta()}
+              className="btn-primary flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Recalcular
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Recalcula a meta com os parâmetros atuais</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       {loading ? (
@@ -233,7 +247,52 @@ export default function CalculadoraMetas() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <>
+          {/* Card Explicativo */}
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-6 mb-6">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <Info className="w-6 h-6 text-blue-600 mt-1" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-blue-900 mb-3">Como Usar a Calculadora de Metas</h3>
+                
+                <div className="space-y-3 text-sm text-blue-800">
+                  <div>
+                    <p className="font-medium mb-1">📋 O que é?</p>
+                    <p>A Calculadora de Metas ajuda você a determinar quantos votos são necessários para vencer a eleição, considerando o cargo, taxa de comparecimento e margem de segurança.</p>
+                  </div>
+                  
+                  <div>
+                    <p className="font-medium mb-1">💡 Exemplo Prático:</p>
+                    <div className="bg-white bg-opacity-70 rounded p-3 space-y-1 text-xs">
+                      <p><strong>Cenário:</strong> Candidato a Prefeito em município com 100.000 eleitores</p>
+                      <p><strong>Parâmetros:</strong> 80% comparecimento, 5% margem de segurança</p>
+                      <p><strong>Cálculo:</strong></p>
+                      <ul className="list-disc list-inside ml-2 space-y-0.5">
+                        <li>Eleitores que votarão: 100.000 × 80% = 80.000</li>
+                        <li>Votos necessários (50%+1): 80.000 × 50.1% = 40.080</li>
+                        <li>Com margem de 5%: 40.080 × 1.05 = 42.084 votos</li>
+                      </ul>
+                      <p className="font-semibold mt-1">✓ Meta Final: 42.084 votos</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <p className="font-medium mb-1">🎯 Dicas de Uso:</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      <li>Ajuste a taxa de comparecimento baseado em eleições anteriores</li>
+                      <li>Aumente a margem de segurança em disputas acirradas</li>
+                      <li>Use a distribuição por zona para focar em regiões estratégicas</li>
+                      <li>Revise a meta conforme a campanha avança</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Painel de Configuração */}
           <div className="space-y-4">
             <div className="card p-6">
@@ -245,7 +304,17 @@ export default function CalculadoraMetas() {
               <div className="space-y-5">
                 {/* Cargo */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Cargo Pretendido</label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="block text-sm font-medium">Cargo Pretendido</label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Selecione o cargo que você pretende concorrer</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <select
                     value={cargo}
                     onChange={(e) => setCargo(e.target.value)}
@@ -261,9 +330,19 @@ export default function CalculadoraMetas() {
 
                 {/* Taxa de Comparecimento */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Taxa de Comparecimento Estimada: {taxaComparecimento}%
-                  </label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="block text-sm font-medium">
+                      Taxa de Comparecimento Estimada: {taxaComparecimento}%
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Porcentagem estimada de eleitores que irão votar</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <input
                     type="range"
                     min="60"
@@ -280,9 +359,19 @@ export default function CalculadoraMetas() {
 
                 {/* Margem de Segurança */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Margem de Segurança: {margemSeguranca}%
-                  </label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="block text-sm font-medium">
+                      Margem de Segurança: {margemSeguranca}%
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Margem extra para garantir a vitória em caso de variações</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <input
                     type="range"
                     min="0"
@@ -299,9 +388,19 @@ export default function CalculadoraMetas() {
                 {/* Número de Concorrentes (para vereador) */}
                 {cargo === 'vereador' && (
                   <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Número de Concorrentes: {concorrentes}
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium">
+                        Número de Concorrentes: {concorrentes}
+                      </label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Número estimado de candidatos concorrendo</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <input
                       type="range"
                       min="3"
@@ -315,9 +414,19 @@ export default function CalculadoraMetas() {
 
                 {/* Meta Percentual Manual */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Meta Percentual Manual: {metaPercentual > 0 ? `${metaPercentual}%` : 'Automático'}
-                  </label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="block text-sm font-medium">
+                      Meta Percentual Manual: {metaPercentual > 0 ? `${metaPercentual}%` : 'Automático'}
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Defina um percentual customizado ou deixe automático</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <input
                     type="range"
                     min="0"
@@ -331,13 +440,20 @@ export default function CalculadoraMetas() {
                   </p>
                 </div>
 
-                <button
-                  onClick={() => calcularMeta()}
-                  className="btn-primary w-full flex items-center justify-center gap-2"
-                >
-                  <Calculator className="w-4 h-4" />
-                  Calcular Meta
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => calcularMeta()}
+                      className="btn-primary w-full flex items-center justify-center gap-2"
+                    >
+                      <Calculator className="w-4 h-4" />
+                      Calcular Meta
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Calcula a meta de votos necessária para vencer</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
@@ -443,10 +559,17 @@ export default function CalculadoraMetas() {
                 <div className="card">
                   <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
                     <h3 className="text-lg font-semibold">Distribuição de Metas por Zona</h3>
-                    <button className="btn-secondary flex items-center gap-2 text-sm">
-                      <Download className="w-4 h-4" />
-                      Exportar
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button className="btn-secondary flex items-center gap-2 text-sm">
+                          <Download className="w-4 h-4" />
+                          Exportar
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Exportar dados da meta em formato CSV</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -537,7 +660,7 @@ export default function CalculadoraMetas() {
               </>
             )}
           </div>
-        </div>
+           </>
       )}
     </div>
   )
