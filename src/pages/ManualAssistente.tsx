@@ -680,7 +680,7 @@ export default function ManualAssistente() {
           Desenvolvido por <strong>DATA-RO Inteligência Territorial</strong>
         </p>
         <p className="text-xs mt-2">
-          Versão 1.0 • Última atualização: Dezembro 2024
+          Versão 1.5 • Última atualização: Janeiro 2026
         </p>
       </div>
     </div>

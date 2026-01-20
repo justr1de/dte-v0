@@ -410,7 +410,7 @@ export default function Home() {
           {/* Copyright */}
           <div className="text-center text-sm text-slate-500 pt-6 border-t border-white/5">
             <p>DATA-RO INTELIGÊNCIA TERRITORIAL</p>
-            <p className="mt-1">© 2025 - Todos os Direitos Reservados</p>
+            <p className="mt-1">© 2026 - Todos os Direitos Reservados</p>
           </div>
         </div>
       </footer>

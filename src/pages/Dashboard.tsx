@@ -781,7 +781,7 @@ export default function Dashboard() {
               </div>
               <div className="p-4 bg-[var(--bg-secondary)] rounded-lg">
                 <p className="text-sm text-[var(--text-secondary)]">Última Atualização</p>
-                <p className="font-semibold">Dezembro 2024</p>
+                <p className="font-semibold">Janeiro 2026</p>
               </div>
             </div>
           </div>

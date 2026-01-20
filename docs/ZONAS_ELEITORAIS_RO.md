@@ -132,6 +132,7 @@ A 24ª Zona Eleitoral de Porto Velho foi **extinta** e seus eleitores foram tran
 |------|-----------|
 | Dezembro/2024 | Documentação inicial criada |
 | Dezembro/2024 | Adicionado histórico de rezoneamento das zonas 23 e 24 |
+| Janeiro/2026 | Atualização para versão 1.5 do sistema |
 
 ---
 
