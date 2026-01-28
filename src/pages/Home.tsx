@@ -167,12 +167,7 @@ export default function Home() {
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
 
-            <Link 
-              to="/login" 
-              className="px-4 py-2 text-white/80 hover:text-white transition-colors"
-            >
-              Demonstração
-            </Link>
+
             <Link 
               to="/login" 
               className="px-5 py-2.5 rounded-lg font-medium transition-all duration-300 hover:scale-105"
@@ -236,12 +231,7 @@ export default function Home() {
               Acessar Sistema
               <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link 
-              to="/login" 
-              className="px-8 py-4 rounded-lg font-medium text-lg bg-white/5 border border-white/20 hover:bg-white/10 transition-all"
-            >
-              Ver Demonstração
-            </Link>
+
           </div>
 
           {/* Stats */}

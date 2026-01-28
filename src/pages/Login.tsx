@@ -55,11 +55,7 @@ export default function Login() {
     }
   }
 
-  // Demo login
-  const handleDemoLogin = () => {
-    toast.success('Entrando em modo demonstração...')
-    navigate('/dashboard')
-  }
+  // Demo login removido - acesso apenas para usuários autorizados
 
   return (
     <div className="min-h-screen flex">
@@ -152,13 +148,7 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Demo Button */}
-          <button
-            onClick={handleDemoLogin}
-            className="btn-secondary w-full mt-4"
-          >
-            Acessar Demonstração
-          </button>
+          {/* Demo Button removido - acesso restrito */}
 
           {/* Contact Info */}
           <div className="mt-8 pt-6 border-t border-[var(--border-color)]">

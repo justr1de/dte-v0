@@ -71,11 +71,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // For demo purposes, allow access without authentication
-  // In production, uncomment the redirect
-  // if (!user) {
-  //   return <Navigate to="/login" replace />
-  // }
+  // Verificar autenticação - acesso restrito
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
 
   return <Layout>{children}</Layout>
 }
@@ -92,11 +91,10 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // For demo purposes, allow access
-  // In production, check admin role
-  // if (!isAdmin) {
-  //   return <Navigate to="/dashboard" replace />
-  // }
+  // Verificar permissão de admin - acesso restrito
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   return <Layout>{children}</Layout>
 }
