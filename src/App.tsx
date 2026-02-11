@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import Layout from './components/Layout'
+import { usePageAudit } from './hooks/usePageAudit'
 
 // Pages
 import Home from './pages/Home'
@@ -59,6 +60,12 @@ import AuditoriaLogin from './pages/admin/AuditoriaLogin'
 import SuperAdmin from './pages/admin/SuperAdmin'
 import LogsAuditoria from './pages/admin/LogsAuditoria'
 
+// Componente de rastreamento de navegação
+function AuditTracker() {
+  usePageAudit()
+  return null
+}
+
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -76,7 +83,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />
   }
 
-  return <Layout>{children}</Layout>
+  return <Layout><AuditTracker />{children}</Layout>
 }
 
 // Admin Route Component
@@ -96,7 +103,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/dashboard" replace />
   }
 
-  return <Layout>{children}</Layout>
+  return <Layout><AuditTracker />{children}</Layout>
 }
 
 export default function App() {

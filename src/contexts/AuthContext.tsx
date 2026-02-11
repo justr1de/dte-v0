@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase, User, UserRole } from '@/lib/supabase'
 import { Session } from '@supabase/supabase-js'
+import { logAuditDirect } from '@/hooks/useAudit'
 
 // Lista de emails que são sempre admin
 const ADMIN_EMAILS = [
@@ -52,6 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session?.user) {
+        if (_event === 'TOKEN_REFRESHED') {
+          // Registrar renovação de sessão
+          logAuditDirect({
+            userEmail: session.user.email || '',
+            actionType: 'session_refresh',
+            actionCategory: 'auth',
+            description: 'Sessão renovada automaticamente'
+          })
+        }
         fetchUserProfile(session.user.id, session.user.email)
       } else {
         setUser(null)
@@ -65,6 +75,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserProfile = async (userId: string, email?: string | null) => {
     // CONTROLE DE ACESSO: Apenas emails permitidos
     if (email && !ALLOWED_EMAILS.includes(email.toLowerCase())) {
+      // Registrar tentativa de acesso bloqueada
+      logAuditDirect({
+        userEmail: email,
+        actionType: 'forced_logout',
+        actionCategory: 'security',
+        description: `Sessão encerrada forçadamente - email ${email} não está na lista de permitidos`,
+        metadata: { reason: 'not_in_allowed_list', email }
+      })
+
       await supabase.auth.signOut()
       setUser(null)
       setSession(null)
@@ -122,13 +141,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     // CONTROLE DE ACESSO: Apenas emails permitidos podem fazer login
     if (!ALLOWED_EMAILS.includes(email.toLowerCase())) {
+      // Registrar tentativa de login bloqueada
+      logAuditDirect({
+        userEmail: email,
+        actionType: 'login_blocked',
+        actionCategory: 'security',
+        description: `Tentativa de login bloqueada - email ${email} não autorizado`,
+        metadata: { 
+          reason: 'not_in_allowed_list', 
+          email,
+          attempted_at: new Date().toISOString()
+        }
+      })
       return { error: new Error(LOCKDOWN_MESSAGE) }
     }
     
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      return { error }
+      
+      if (error) {
+        // Registrar falha de login
+        logAuditDirect({
+          userEmail: email,
+          actionType: 'login_failed',
+          actionCategory: 'auth',
+          description: `Falha no login para ${email}: ${error.message}`,
+          metadata: { 
+            error_message: error.message,
+            email,
+            attempted_at: new Date().toISOString()
+          }
+        })
+        return { error }
+      }
+
+      // Registrar login bem-sucedido
+      logAuditDirect({
+        userEmail: email,
+        actionType: 'login',
+        actionCategory: 'auth',
+        description: `Login realizado com sucesso por ${email}`,
+        metadata: { 
+          email,
+          login_method: 'email_password',
+          success: true,
+          login_at: new Date().toISOString()
+        }
+      })
+
+      return { error: null }
     } catch (error) {
+      // Registrar erro inesperado
+      logAuditDirect({
+        userEmail: email,
+        actionType: 'login_error',
+        actionCategory: 'system',
+        description: `Erro inesperado no login para ${email}`,
+        metadata: { 
+          error: (error as Error).message,
+          email
+        }
+      })
       return { error: error as Error }
     }
   }
@@ -154,6 +227,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role,
           created_at: new Date().toISOString()
         })
+
+        // Registrar criação de conta
+        logAuditDirect({
+          userEmail: email,
+          userName: name,
+          userRole: role,
+          actionType: 'account_created',
+          actionCategory: 'auth',
+          description: `Nova conta criada: ${name} (${email}) com role ${role}`,
+          metadata: { email, name, role }
+        })
       }
 
       return { error: null }
@@ -163,6 +247,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
+    // Registrar logout antes de desconectar
+    if (user) {
+      logAuditDirect({
+        userEmail: user.email,
+        userName: user.name,
+        userRole: user.role,
+        actionType: 'logout',
+        actionCategory: 'auth',
+        description: `Logout voluntário de ${user.name} (${user.email})`,
+        metadata: {
+          email: user.email,
+          session_duration: session?.expires_at 
+            ? `Sessão expira em: ${new Date((session.expires_at || 0) * 1000).toLocaleString('pt-BR')}`
+            : 'N/A'
+        }
+      })
+    }
+
     await supabase.auth.signOut()
     setUser(null)
     setSession(null)
