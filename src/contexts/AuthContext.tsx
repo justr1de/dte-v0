@@ -4,22 +4,16 @@ import { Session } from '@supabase/supabase-js'
 
 // Lista de emails que são sempre admin
 const ADMIN_EMAILS = [
-  'contato@dataro-it.com.br',
-  'hugonsilva@gmail.com',
-  'ranieri.braga@hotmail.com'
+  'contato@dataro-it.com.br'
 ]
 
-// Lista de emails bloqueados
-const BLOCKED_EMAILS = [
-  'manoelvfn16@gmail.com',
-  'richaelmenezes@gmail.com'
-]
-
-// Mensagens de erro personalizadas por email
-const BLOCKED_MESSAGES: Record<string, string> = {
-  'manoelvfn16@gmail.com': 'Error: Database overflow',
-  'richaelmenezes@gmail.com': 'Sistema em Manutenção. Por favor, tente novamente mais tarde.'
-}
+// ========================================
+// MODO LOCKDOWN TOTAL - SISTEMA BLOQUEADO
+// Nenhum usuário pode acessar o sistema
+// Até que o administrador libere
+// ========================================
+const SYSTEM_LOCKED = true
+const LOCKDOWN_MESSAGE = 'Sistema temporariamente fora do ar para manutenção. Aguarde liberação do administrador.'
 
 interface AuthContextType {
   user: User | null
@@ -66,14 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const fetchUserProfile = async (userId: string, email?: string | null) => {
-    // Verificar se o email está bloqueado
-    if (email && BLOCKED_EMAILS.includes(email.toLowerCase())) {
+    // LOCKDOWN TOTAL: Desconectar qualquer usuário logado
+    if (SYSTEM_LOCKED) {
       await supabase.auth.signOut()
       setUser(null)
       setSession(null)
       setLoading(false)
-      const errorMessage = BLOCKED_MESSAGES[email.toLowerCase()] || 'Acesso não autorizado'
-      throw new Error(errorMessage)
+      throw new Error(LOCKDOWN_MESSAGE)
     }
     
     // Verificar se o email está na lista de admins
@@ -124,10 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
-    // Verificar se o email está bloqueado
-    if (BLOCKED_EMAILS.includes(email.toLowerCase())) {
-      const errorMessage = BLOCKED_MESSAGES[email.toLowerCase()] || 'Acesso não autorizado'
-      return { error: new Error(errorMessage) }
+    // LOCKDOWN TOTAL: Bloquear qualquer tentativa de login
+    if (SYSTEM_LOCKED) {
+      return { error: new Error(LOCKDOWN_MESSAGE) }
     }
     
     try {
