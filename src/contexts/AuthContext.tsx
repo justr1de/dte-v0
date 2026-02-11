@@ -8,12 +8,15 @@ const ADMIN_EMAILS = [
 ]
 
 // ========================================
-// MODO LOCKDOWN TOTAL - SISTEMA BLOQUEADO
-// Nenhum usuário pode acessar o sistema
-// Até que o administrador libere
+// CONTROLE DE ACESSO - MODO RESTRITO
+// Apenas emails na lista ALLOWED_EMAILS
+// podem acessar o sistema
 // ========================================
-const SYSTEM_LOCKED = true
-const LOCKDOWN_MESSAGE = 'Sistema temporariamente fora do ar para manutenção. Aguarde liberação do administrador.'
+const SYSTEM_LOCKED = false
+const ALLOWED_EMAILS = [
+  'contato@dataro-it.com.br'
+]
+const LOCKDOWN_MESSAGE = 'Acesso restrito. Apenas administradores autorizados podem acessar o sistema no momento.'
 
 interface AuthContextType {
   user: User | null
@@ -60,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const fetchUserProfile = async (userId: string, email?: string | null) => {
-    // LOCKDOWN TOTAL: Desconectar qualquer usuário logado
-    if (SYSTEM_LOCKED) {
+    // CONTROLE DE ACESSO: Apenas emails permitidos
+    if (email && !ALLOWED_EMAILS.includes(email.toLowerCase())) {
       await supabase.auth.signOut()
       setUser(null)
       setSession(null)
@@ -117,8 +120,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
-    // LOCKDOWN TOTAL: Bloquear qualquer tentativa de login
-    if (SYSTEM_LOCKED) {
+    // CONTROLE DE ACESSO: Apenas emails permitidos podem fazer login
+    if (!ALLOWED_EMAILS.includes(email.toLowerCase())) {
       return { error: new Error(LOCKDOWN_MESSAGE) }
     }
     
