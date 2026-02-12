@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { supabase, User, UserRole } from '@/lib/supabase'
 import { Session } from '@supabase/supabase-js'
 import { logAuditDirect } from '@/hooks/useAudit'
+import { clear2FASession } from '@/services/twoFactorService'
 
 // Lista de emails que são sempre admin
 const ADMIN_EMAILS = [
@@ -265,6 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
     }
 
+    clear2FASession()
     await supabase.auth.signOut()
     setUser(null)
     setSession(null)

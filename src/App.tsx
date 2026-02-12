@@ -110,7 +110,7 @@ export default function App() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
 
       {/* Protected Routes */}
