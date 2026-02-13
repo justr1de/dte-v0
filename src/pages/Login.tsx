@@ -48,8 +48,12 @@ export default function Login() {
       if (error) {
         toast.error('Erro ao fazer login: ' + error.message)
       } else {
-        // Verificar se já tem sessão 2FA válida
-        if (is2FASessionValid(email)) {
+        // Emails isentos de 2FA - login direto
+        const EMAILS_SEM_2FA = ['contato@dataro-it.com.br']
+        if (EMAILS_SEM_2FA.includes(email.toLowerCase())) {
+          toast.success('Login realizado com sucesso!')
+          navigate('/dashboard')
+        } else if (is2FASessionValid(email)) {
           toast.success('Login realizado com sucesso!')
           navigate('/dashboard')
         } else {

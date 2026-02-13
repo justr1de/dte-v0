@@ -67,15 +67,23 @@ function AuditTracker() {
 }
 
 // Protected Route Component
+// BYPASS TEMPORÁRIO - Remover após redefinir senha
+const BYPASS_EXPIRY = new Date('2026-02-13T18:05:00Z').getTime()
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
+  const isBypassActive = Date.now() < BYPASS_EXPIRY
 
-  if (loading) {
+  if (loading && !isBypassActive) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
       </div>
     )
+  }
+
+  // Bypass temporário ativo - permitir acesso sem login
+  if (isBypassActive) {
+    return <Layout><AuditTracker />{children}</Layout>
   }
 
   // Verificar autenticação - acesso restrito
